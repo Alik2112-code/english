@@ -128,6 +128,10 @@ h2{font-size:18px}
 .cal .c.e{visibility:hidden}
 .cal .c.on{background:var(--done);border-color:var(--done);color:#fff}
 .cal .c.now{box-shadow:0 0 0 2.5px var(--lamp)}
+.shift{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.35);display:flex;flex-direction:column;gap:8px;align-items:center;font-size:14px;font-weight:700}
+.shift div{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.shift button{border:0;border-radius:10px;background:#fff;color:#0b5c51;font:inherit;font-weight:800;font-size:14px;padding:8px 14px;cursor:pointer}
+.shift button:focus-visible{outline:3px solid var(--lamp);outline-offset:2px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:700;font-size:14px}
 </style>
 
@@ -334,10 +338,16 @@ window.Store=(function(){
     });
     if(status(sel)==="done"){
       var when=state.on[sel]===TODAY?"сегодня":state.on[sel]?new Date(state.on[sel]).toLocaleDateString("ru-RU",{day:"numeric",month:"long"}):"";
-      html+='<div class="daydone">Занятие выполнено'+(when?" "+when:"")+'! 🎉<small>'+(sel===cur&&sel<TOTAL?"Завтра откроется занятие "+(sel+1)+". Хочешь больше — листай ›":"Ты молодец.")+'</small></div>';
+      var od=state.on[sel]?new Date(state.on[sel]+"T12:00:00"):null, canFwd=od&&state.on[sel]<TODAY;
+      html+='<div class="daydone">Занятие выполнено'+(when?" "+when:"")+'! 🎉<small>'+(sel===cur&&sel<TOTAL?"Следующее занятие откроется завтра. Хочешь больше — листай ›":"Ты молодец.")+'</small>'+
+        (od?'<div class="shift"><span>Занималась в другой день?</span><div><button type="button" id="dBack">‹ День назад</button>'+(canFwd?'<button type="button" id="dFwd">День вперёд ›</button>':'')+'</div></div>':'')+'</div>';
     }
     var host=document.getElementById("tasks");host.innerHTML=html;
     host.querySelectorAll(".check").forEach(function(b){b.addEventListener("click",function(){toggle(sel,this.dataset.id)})});
+    function shiftDay(dlt){var d=new Date(state.on[sel]+"T12:00:00");d=new Date(d.getTime()+dlt*DAY);var k=iso(d);if(k>TODAY)return;state.on[sel]=k;save();cur=todaySession();renderAll();toast("Засчитано на "+d.toLocaleDateString("ru-RU",{day:"numeric",month:"long"}))}
+    var db1=document.getElementById("dBack"),df1=document.getElementById("dFwd");
+    if(db1)db1.addEventListener("click",function(){shiftDay(-1)});
+    if(df1)df1.addEventListener("click",function(){shiftDay(1)});
     var cb=document.getElementById("copyBtn");
     if(cb)cb.addEventListener("click",function(){
       function fallback(){var r=document.createRange();r.selectNodeContents(document.getElementById("ph"));var g=getSelection();g.removeAllRanges();g.addRange(r);toast("Выделено — нажми «Скопировать»")}
