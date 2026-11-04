@@ -1,4 +1,4 @@
-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta http-equiv="Cache-Control" content="no-cache"><meta name="build" content="1793775293"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Английский">
 <link rel="apple-touch-icon" href="icon.png"><link rel="icon" href="icon.png">
@@ -656,4 +656,18 @@ window.Store=(function(){
 })();
 </script>
 
+<script>
+// Автообновление: если на сайте новая версия — сразу открыть её, минуя кэш телефона
+(function(){
+  var me=(document.querySelector('meta[name=build]')||{}).content;
+  function check(){
+    fetch(location.pathname+"?nc="+Date.now(),{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){
+      var m=t.match(/<meta name="build" content="(\d+)"/);
+      if(m&&me&&m[1]!==me&&location.search.indexOf("v="+m[1])<0)location.replace(location.pathname+"?v="+m[1]);
+    }).catch(function(){});
+  }
+  check();
+  document.addEventListener("visibilitychange",function(){if(!document.hidden)check()});
+})();
+</script>
 </body></html>
