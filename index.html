@@ -1,4 +1,4 @@
-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta http-equiv="Cache-Control" content="no-cache"><meta name="build" content="1793775293"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta http-equiv="Cache-Control" content="no-cache"><meta name="build" content="1793775630"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Английский">
 <link rel="apple-touch-icon" href="icon.png"><link rel="icon" href="icon.png">
@@ -307,6 +307,8 @@ window.Store=(function(){
     for(var n=1;n<=TOTAL;n++){if(state.on[n]===TODAY)return n;if(state.on[n])last=n}
     return last?Math.min(TOTAL,last+1):1;
   }
+  // Разово: занятие 1 выполнено 3 ноября
+  if(!state.m1){state.m1=1;state.s[1]={};required(1).forEach(function(t){state.s[1][t.id]=1});state.on[1]="2026-11-03";save()}
   var cur=todaySession(), sel=cur;
 
   var CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
