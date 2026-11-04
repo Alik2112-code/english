@@ -299,7 +299,7 @@ window.Store=(function(){
     return list;
   }
   function required(n){return tasksFor(n).filter(function(t){return!t.opt})}
-  function status(n){var s=state.s[n]||{},r=required(n),c=r.filter(function(t){return s[t.id]}).length;return c===0?"none":c===r.length?"done":"part"}
+  function status(n){if(state.f&&state.f[n])return"done";var s=state.s[n]||{},r=required(n),c=r.filter(function(t){return s[t.id]}).length;return c===0?"none":c===r.length?"done":"part"}
   function doneCount(){var c=0;for(var n=1;n<=TOTAL;n++)if(status(n)==="done")c++;return c}
   // Какое занятие «сегодняшнее»: закрытое сегодня, иначе первое незаконченное
   function todaySession(){
@@ -338,6 +338,7 @@ window.Store=(function(){
     function dk(o){return iso(new Date(now.getFullYear(),now.getMonth(),now.getDate()-o))}
     var opts=[[dk(0),"Сегодня"],[dk(1),"Вчера"],[dk(2),"Позавчера"]];
     html+='<div class="dayp"><span>Когда занималась:</span><div>'+opts.map(function(o){return'<button type="button" data-dt="'+o[0]+'"'+(picked===o[0]?' class="on" aria-pressed="true"':' aria-pressed="false"')+'>'+o[1]+'</button>'}).join("")+'</div></div>';
+    if(status(sel)!=="done")html+='<button type="button" class="g-big" id="dForce">✓ Засчитать занятие</button>';
     tasksFor(sel).forEach(function(t){
       var on=!!s[t.id];
       html+='<article class="task'+(on?" done":"")+'"><button type="button" class="check" data-id="'+t.id+'" aria-pressed="'+on+'" aria-label="Отметить: '+esc(t.title)+'">'+CHECK+'</button><div style="min-width:0">'+
@@ -350,10 +351,14 @@ window.Store=(function(){
     if(status(sel)==="done"){
       var when=state.on[sel]===TODAY?"сегодня":state.on[sel]?new Date(state.on[sel]).toLocaleDateString("ru-RU",{day:"numeric",month:"long"}):"";
       var od=state.on[sel]?new Date(state.on[sel]+"T12:00:00"):null, canFwd=od&&state.on[sel]<TODAY;
-      html+='<div class="daydone">Занятие выполнено'+(when?" "+when:"")+'! 🎉<small>'+(sel===cur&&sel<TOTAL?"Следующее занятие откроется завтра. Хочешь больше — листай ›":"Ты молодец.")+'</small>'+'</div>';
+      html+='<div class="daydone">Занятие выполнено'+(when?" "+when:"")+'! 🎉<small>'+(sel===cur&&sel<TOTAL?"Следующее занятие откроется завтра. Хочешь больше — листай ›":"Ты молодец.")+'</small>'+(state.f&&state.f[sel]?'<div class="shift"><div><button type="button" id="dUnforce">Отменить</button></div></div>':'')+'</div>';
     }
     var host=document.getElementById("tasks");host.innerHTML=html;
     host.querySelectorAll(".check").forEach(function(b){b.addEventListener("click",function(){toggle(sel,this.dataset.id)})});
+    var fb=document.getElementById("dForce");
+    if(fb)fb.addEventListener("click",function(){state.f=state.f||{};state.f[sel]=1;state.on[sel]=picked;save();cur=todaySession();toast("Занятие засчитано ✓");renderAll()});
+    var ub=document.getElementById("dUnforce");
+    if(ub)ub.addEventListener("click",function(){delete state.f[sel];if(status(sel)!=="done")delete state.on[sel];save();cur=todaySession();renderAll()});
     host.querySelectorAll("[data-dt]").forEach(function(b){b.addEventListener("click",function(){
       var k=this.dataset.dt;state.dt=state.dt||{};state.dt[sel]=k;
       if(status(sel)==="done")state.on[sel]=k;
