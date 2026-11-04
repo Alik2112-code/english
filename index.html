@@ -179,7 +179,7 @@ h2{font-size:18px}
   <section data-tab="progress">
     <div class="cal-head"><button type="button" id="cPrev" aria-label="Предыдущий месяц">‹</button><h2 id="cTitle">Календарь</h2><button type="button" id="cNext" aria-label="Следующий месяц">›</button></div>
     <div class="cal" id="cal"></div>
-    <p class="muted" style="margin:8px 0 0;font-size:13px">Зелёный — в этот день ты закрыла занятие.</p>
+    <p class="muted" style="margin:8px 0 0;font-size:13px">Зелёный — в этот день ты занималась.</p>
   </section>
 
   <section data-tab="progress">
@@ -241,7 +241,7 @@ window.Store=(function(){
   // Занятия идут по порядку, а не по датам. Не доделала — завтра продолжишь то же занятие.
   var TOTAL=60, CYCLE=6, KEY="eng-flex-v1", DAY=864e5;
   var state={s:{},on:{}}; // s[N] = {taskId:1}, on[N] = дата завершения
-  function load(){try{var raw=JSON.parse(Store.get(KEY)||"null");if(raw&&raw.s)state=raw}catch(e){}}load();
+  function load(){try{var raw=JSON.parse(Store.get(KEY)||"null");if(raw&&raw.s){state=raw;delete state.f;delete state.dt;if(!state.on)state.on={}}}catch(e){}}load();
   function save(){Store.set(KEY,JSON.stringify(state))}
   function iso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
   var now=new Date(), TODAY=iso(now);
@@ -299,14 +299,13 @@ window.Store=(function(){
     return list;
   }
   function required(n){return tasksFor(n).filter(function(t){return!t.opt})}
-  function status(n){if(state.f&&state.f[n])return"done";var s=state.s[n]||{},r=required(n),c=r.filter(function(t){return s[t.id]}).length;return c===0?"none":c===r.length?"done":"part"}
-  function doneCount(){var c=0;for(var n=1;n<=TOTAL;n++)if(status(n)==="done")c++;return c}
+  function status(n){var s=state.s[n]||{},r=required(n),c=r.filter(function(t){return s[t.id]}).length;return c===0?"none":c===r.length?"done":"part"}
+  function doneCount(){return Object.keys(state.on).length}
   // Какое занятие «сегодняшнее»: закрытое сегодня, иначе первое незаконченное
   function todaySession(){
-    var last=0;for(var n=1;n<=TOTAL;n++)if(state.on[n]===TODAY)last=n;
-    if(last)return last;
-    for(var m=1;m<=TOTAL;m++)if(status(m)!=="done")return m;
-    return TOTAL;
+    var last=0;
+    for(var n=1;n<=TOTAL;n++){if(state.on[n]===TODAY)return n;if(state.on[n])last=n}
+    return last?Math.min(TOTAL,last+1):1;
   }
   var cur=todaySession(), sel=cur;
 
@@ -317,8 +316,7 @@ window.Store=(function(){
     var st=state.s[n]||(state.s[n]={}), before=status(n);
     if(st[id])delete st[id];else st[id]=1;
     var after=status(n);
-    if(after==="done"&&before!=="done")state.on[n]=(state.dt&&state.dt[n])||TODAY;
-    if(after!=="done")delete state.on[n];
+    if(Object.keys(st).length)state.on[n]=state.on[n]||TODAY;else delete state.on[n];
     save();
     if(after==="done"&&before!=="done")toast("Отлично! Занятие засчитано ✓");
     cur=todaySession();
@@ -333,12 +331,6 @@ window.Store=(function(){
     document.getElementById("next").disabled=sel>=TOTAL;
     document.getElementById("toToday").hidden=sel===cur;
     var html="", list=tasksFor(sel);
-    state.dt=state.dt||{};
-    var picked=state.on[sel]||state.dt[sel]||TODAY;
-    function dk(o){return iso(new Date(now.getFullYear(),now.getMonth(),now.getDate()-o))}
-    var opts=[[dk(0),"Сегодня"],[dk(1),"Вчера"],[dk(2),"Позавчера"]];
-    html+='<div class="dayp"><span>Когда занималась:</span><div>'+opts.map(function(o){return'<button type="button" data-dt="'+o[0]+'"'+(picked===o[0]?' class="on" aria-pressed="true"':' aria-pressed="false"')+'>'+o[1]+'</button>'}).join("")+'</div></div>';
-    if(status(sel)!=="done")html+='<button type="button" class="g-big" id="dForce">✓ Засчитать занятие</button>';
     tasksFor(sel).forEach(function(t){
       var on=!!s[t.id];
       html+='<article class="task'+(on?" done":"")+'"><button type="button" class="check" data-id="'+t.id+'" aria-pressed="'+on+'" aria-label="Отметить: '+esc(t.title)+'">'+CHECK+'</button><div style="min-width:0">'+
@@ -351,19 +343,10 @@ window.Store=(function(){
     if(status(sel)==="done"){
       var when=state.on[sel]===TODAY?"сегодня":state.on[sel]?new Date(state.on[sel]).toLocaleDateString("ru-RU",{day:"numeric",month:"long"}):"";
       var od=state.on[sel]?new Date(state.on[sel]+"T12:00:00"):null, canFwd=od&&state.on[sel]<TODAY;
-      html+='<div class="daydone">Занятие выполнено'+(when?" "+when:"")+'! 🎉<small>'+(sel===cur&&sel<TOTAL?"Следующее занятие откроется завтра. Хочешь больше — листай ›":"Ты молодец.")+'</small>'+(state.f&&state.f[sel]?'<div class="shift"><div><button type="button" id="dUnforce">Отменить</button></div></div>':'')+'</div>';
+      html+='<div class="daydone">Занятие выполнено'+(when?" "+when:"")+'! 🎉<small>'+(sel===cur&&sel<TOTAL?"Следующее занятие откроется завтра. Хочешь больше — листай ›":"Ты молодец.")+'</small>'+'</div>';
     }
     var host=document.getElementById("tasks");host.innerHTML=html;
     host.querySelectorAll(".check").forEach(function(b){b.addEventListener("click",function(){toggle(sel,this.dataset.id)})});
-    var fb=document.getElementById("dForce");
-    if(fb)fb.addEventListener("click",function(){state.f=state.f||{};state.f[sel]=1;state.on[sel]=picked;save();cur=todaySession();toast("Занятие засчитано ✓");renderAll()});
-    var ub=document.getElementById("dUnforce");
-    if(ub)ub.addEventListener("click",function(){delete state.f[sel];if(status(sel)!=="done")delete state.on[sel];save();cur=todaySession();renderAll()});
-    host.querySelectorAll("[data-dt]").forEach(function(b){b.addEventListener("click",function(){
-      var k=this.dataset.dt;state.dt=state.dt||{};state.dt[sel]=k;
-      if(status(sel)==="done")state.on[sel]=k;
-      save();cur=todaySession();renderAll();
-    })});
     var cb=document.getElementById("copyBtn");
     if(cb)cb.addEventListener("click",function(){
       function fallback(){var r=document.createRange();r.selectNodeContents(document.getElementById("ph"));var g=getSelection();g.removeAllRanges();g.addRange(r);toast("Выделено — нажми «Скопировать»")}
