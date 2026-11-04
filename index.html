@@ -128,6 +128,11 @@ h2{font-size:18px}
 .cal .c.e{visibility:hidden}
 .cal .c.on{background:var(--done);border-color:var(--done);color:#fff}
 .cal .c.now{box-shadow:0 0 0 2.5px var(--lamp)}
+.dayp{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:14px;font-weight:700;color:var(--muted)}
+.dayp div{display:flex;gap:6px;flex-wrap:wrap}
+.dayp button{border:1.5px solid var(--line);background:var(--bg);color:var(--fg);border-radius:99px;padding:6px 12px;font:inherit;font-size:14px;font-weight:800;cursor:pointer}
+.dayp button.on{background:var(--lamp);border-color:var(--lamp);color:var(--on-lamp)}
+.dayp button:focus-visible{outline:3px solid var(--lamp);outline-offset:2px}
 .shift{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.35);display:flex;flex-direction:column;gap:8px;align-items:center;font-size:14px;font-weight:700}
 .shift div{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .shift button{border:0;border-radius:10px;background:#fff;color:#0b5c51;font:inherit;font-weight:800;font-size:14px;padding:8px 14px;cursor:pointer}
@@ -312,10 +317,11 @@ window.Store=(function(){
     var st=state.s[n]||(state.s[n]={}), before=status(n);
     if(st[id])delete st[id];else st[id]=1;
     var after=status(n);
-    if(after==="done"&&before!=="done")state.on[n]=TODAY;
+    if(after==="done"&&before!=="done")state.on[n]=(state.dt&&state.dt[n])||TODAY;
     if(after!=="done")delete state.on[n];
     save();
     if(after==="done"&&before!=="done")toast("Отлично! Занятие засчитано ✓");
+    cur=todaySession();
     renderAll();
   }
 
@@ -326,7 +332,12 @@ window.Store=(function(){
     document.getElementById("prev").disabled=sel<=1;
     document.getElementById("next").disabled=sel>=TOTAL;
     document.getElementById("toToday").hidden=sel===cur;
-    var html="";
+    var html="", list=tasksFor(sel);
+    state.dt=state.dt||{};
+    var picked=state.on[sel]||state.dt[sel]||TODAY;
+    function dk(o){return iso(new Date(now.getFullYear(),now.getMonth(),now.getDate()-o))}
+    var opts=[[dk(0),"Сегодня"],[dk(1),"Вчера"],[dk(2),"Позавчера"]];
+    html+='<div class="dayp"><span>Когда занималась:</span><div>'+opts.map(function(o){return'<button type="button" data-dt="'+o[0]+'"'+(picked===o[0]?' class="on" aria-pressed="true"':' aria-pressed="false"')+'>'+o[1]+'</button>'}).join("")+'</div></div>';
     tasksFor(sel).forEach(function(t){
       var on=!!s[t.id];
       html+='<article class="task'+(on?" done":"")+'"><button type="button" class="check" data-id="'+t.id+'" aria-pressed="'+on+'" aria-label="Отметить: '+esc(t.title)+'">'+CHECK+'</button><div style="min-width:0">'+
@@ -339,15 +350,15 @@ window.Store=(function(){
     if(status(sel)==="done"){
       var when=state.on[sel]===TODAY?"сегодня":state.on[sel]?new Date(state.on[sel]).toLocaleDateString("ru-RU",{day:"numeric",month:"long"}):"";
       var od=state.on[sel]?new Date(state.on[sel]+"T12:00:00"):null, canFwd=od&&state.on[sel]<TODAY;
-      html+='<div class="daydone">Занятие выполнено'+(when?" "+when:"")+'! 🎉<small>'+(sel===cur&&sel<TOTAL?"Следующее занятие откроется завтра. Хочешь больше — листай ›":"Ты молодец.")+'</small>'+
-        (od?'<div class="shift"><span>Занималась в другой день?</span><div><button type="button" id="dBack">‹ День назад</button>'+(canFwd?'<button type="button" id="dFwd">День вперёд ›</button>':'')+'</div></div>':'')+'</div>';
+      html+='<div class="daydone">Занятие выполнено'+(when?" "+when:"")+'! 🎉<small>'+(sel===cur&&sel<TOTAL?"Следующее занятие откроется завтра. Хочешь больше — листай ›":"Ты молодец.")+'</small>'+'</div>';
     }
     var host=document.getElementById("tasks");host.innerHTML=html;
     host.querySelectorAll(".check").forEach(function(b){b.addEventListener("click",function(){toggle(sel,this.dataset.id)})});
-    function shiftDay(dlt){var d=new Date(state.on[sel]+"T12:00:00");d=new Date(d.getTime()+dlt*DAY);var k=iso(d);if(k>TODAY)return;state.on[sel]=k;save();cur=todaySession();renderAll();toast("Засчитано на "+d.toLocaleDateString("ru-RU",{day:"numeric",month:"long"}))}
-    var db1=document.getElementById("dBack"),df1=document.getElementById("dFwd");
-    if(db1)db1.addEventListener("click",function(){shiftDay(-1)});
-    if(df1)df1.addEventListener("click",function(){shiftDay(1)});
+    host.querySelectorAll("[data-dt]").forEach(function(b){b.addEventListener("click",function(){
+      var k=this.dataset.dt;state.dt=state.dt||{};state.dt[sel]=k;
+      if(status(sel)==="done")state.on[sel]=k;
+      save();cur=todaySession();renderAll();
+    })});
     var cb=document.getElementById("copyBtn");
     if(cb)cb.addEventListener("click",function(){
       function fallback(){var r=document.createRange();r.selectNodeContents(document.getElementById("ph"));var g=getSelection();g.removeAllRanges();g.addRange(r);toast("Выделено — нажми «Скопировать»")}
