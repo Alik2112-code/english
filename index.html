@@ -667,6 +667,24 @@ body.running #bookCta{display:none!important}
 .bk-cta.read{border-color:var(--done)!important;background:var(--done-soft)!important}
 .bk-cta em{color:var(--rare)}
 .bk-cta:focus-visible,.bk-next:focus-visible,.bk-card:focus-visible,.bk-ch:focus-visible,.bk-ws:focus-visible,.bk-wx:focus-visible,.bk-kws summary:focus-visible{outline:3px solid var(--lamp);outline-offset:2px}
+.bk-day{display:flex;flex-direction:column;gap:4px;padding:16px;border-radius:22px;border:2px solid var(--rare);border-bottom-width:5px;background:var(--rare-soft);color:var(--fg)}
+.bk-day .g-big{margin-top:10px}
+.bk-day.done{border-color:var(--done);background:var(--done-soft)}
+.bk-day.done .bk-eb{color:var(--fg)}
+.bk-day-t{font-family:var(--display);font-size:24px;line-height:1.15}
+.bk-day-a{font-size:13px;font-weight:800;color:var(--muted)}
+.bk-day-c{margin:6px 0 0;font-size:15px;line-height:1.45;max-width:60ch}
+.bk-all summary{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:baseline;cursor:pointer;list-style:none;padding:12px 14px;border:2px solid var(--line);border-bottom-width:4px;border-radius:16px;background:var(--card)}
+.bk-all summary::-webkit-details-marker{display:none}
+.bk-all summary b{font-family:var(--display);font-size:17px}
+.bk-all summary span{font-size:13px;color:var(--muted);font-weight:800;font-variant-numeric:tabular-nums}
+.bk-all summary::after{content:"▾";color:var(--muted);font-weight:800}
+.bk-all[open] summary::after{content:"▴"}
+.bk-all .bk-chs{margin-top:10px}
+.bk-all summary:focus-visible{outline:3px solid var(--lamp);outline-offset:2px}
+.bk-stars{color:var(--legend);font-size:13px;letter-spacing:1px;white-space:nowrap}
+.bk-ctx{background:var(--bg);border-radius:14px;padding:10px 12px;font-size:15px;line-height:1.45;display:flex;flex-direction:column;gap:2px}
+.bk-sm{background:var(--done-soft);border:2px solid var(--done);border-radius:16px;padding:12px 14px;font-size:16px;line-height:1.5}
 </style>
 
 
@@ -689,11 +707,11 @@ body.running #bookCta{display:none!important}
     <span class="muted" id="bkMsg" style="font-size:14px;font-weight:700"></span>
   </section>
 
+  <section id="bookCta" data-tab="today" aria-label="Отрывок дня"></section>
   <section id="heroMini" data-tab="today"></section>
   <section id="goal" data-tab="today"></section>
   <section id="chests" data-tab="today"></section>
   <section class="meter" id="meter" aria-label="Сегодня" data-tab="today"></section>
-  <section id="bookCta" data-tab="today" aria-label="Книга дня"></section>
 
   <section id="path" data-tab="today" aria-label="Карта уровней"></section>
 
@@ -900,8 +918,8 @@ window.G=(function(){
     ["l5","🚀","Уровень 5","набери 1000 XP",function(){return lvlOf(g.xp)>=5}],
     ["l10","🏆","Уровень 10","набери 4500 XP",function(){return lvlOf(g.xp)>=10}],
     ["wear5","👗","Модница","5 покупок для героя",function(){return g.own.length>=7}],
-    ["bk1","📖","Читательница","первая глава книги",function(){return(g.bk||0)>=1}],
-    ["bk10","📚","Книжный червь","10 глав книг",function(){return(g.bk||0)>=10}],
+    ["bk1","📖","Читательница","первый отрывок или глава",function(){return(g.bk||0)>=1}],
+    ["bk10","📚","Книжный червь","10 отрывков и глав",function(){return(g.bk||0)>=10}],
     ["bkall","🏅","Целая книга","дочитана книга на английском",function(){return(g.bkf||0)>=1}]];
 
   // Звук
@@ -3299,7 +3317,7 @@ function look(raw,D){
   if(/'s$/.test(w))t.push(w.slice(0,-2));
   if(/ies$/.test(w))t.push(w.slice(0,-3)+"y");
   if(/(s|x|ch|sh)es$/.test(w))t.push(w.slice(0,-2));
-  if(/s$/.test(w))t.push(w.slice(0,-1));
+  if(/s$/.test(w)&&w.length>3)t.push(w.slice(0,-1));
   if(/ied$/.test(w))t.push(w.slice(0,-3)+"y");
   if(/ed$/.test(w)){t.push(w.slice(0,-2));t.push(w.slice(0,-1));if(/([bcdfgklmnprstvz])\1ed$/.test(w))t.push(w.slice(0,-3))}
   if(/ing$/.test(w)){t.push(w.slice(0,-3));t.push(w.slice(0,-3)+"e");if(/([bcdfgklmnprstvz])\1ing$/.test(w))t.push(w.slice(0,-4))}
@@ -3308,12 +3326,216 @@ function look(raw,D){
   if(w.indexOf("-")>0){var ps=w.split("-").map(function(p){return look(p,D)});if(ps.every(Boolean))return{w:w,r:ps.map(function(p){return p.w+" — "+p.r}).join(" + ")}}
   return null;
 }
+  var FRAGS=[
+{id:"rabbit1",bk:"The Tale of Peter Rabbit",au:"Беатрис Поттер",y:1902,lv:1,
+ ctx:"Начало знаменитой английской сказки. Мама-крольчиха уходит по делам и даёт детям строгий наказ.",
+ sm:"Мама разрешает крольчатам гулять где угодно, кроме одного места — сада мистера Макгрегора. Там погиб их папа: миссис Макгрегор запекла его в пирог. Чёрный английский юмор прямо в детской сказке.",
+ g:"",
+ p:[[["Once upon a time there were four little Rabbits, and their names were— Flopsy, Mopsy, Cotton-tail, and Peter.","Жили-были четыре маленьких кролика, и звали их Флопси, Мопси, Ватный Хвостик и Питер."],["They lived with their Mother in a sand-bank, underneath the root of a very big fir-tree.","Они жили с мамой в песчаном пригорке, под корнем очень большой ели."]],
+    [["“Now, my dears,” said old Mrs. Rabbit one morning, “you may go into the fields or down the lane, but don't go into Mr. McGregor's garden: your Father had an accident there; he was put in a pie by Mrs. McGregor.”","«Ну, мои дорогие, — сказала однажды утром старая миссис Крольчиха, — можете гулять в полях или по тропинке, но не ходите в сад мистера Макгрегора: там с вашим папой случилось несчастье — миссис Макгрегор запекла его в пирог»."]],
+    [["“Now run along, and don't get into mischief. I am going out.”","«А теперь бегите и не шалите. Я ухожу»."]]]},
+{id:"rabbit2",bk:"The Tale of Peter Rabbit",au:"Беатрис Поттер",y:1902,lv:1,
+ ctx:"Продолжение сказки. Мама ушла в булочную, а крольчата остались одни.",
+ sm:"Сёстры слушаются маму и идут за ежевикой. А непослушный Питер бежит именно туда, куда нельзя, — в сад мистера Макгрегора. Объедается овощами, ему становится плохо — и тут он натыкается на самого хозяина сада.",
+ g:"",
+ p:[[["Then old Mrs. Rabbit took a basket and her umbrella, and went through the wood to the baker's.","Потом старая миссис Крольчиха взяла корзинку и зонтик и пошла через лес в булочную."],["She bought a loaf of brown bread and five currant buns.","Она купила буханку чёрного хлеба и пять булочек с изюмом."]],
+    [["Flopsy, Mopsy, and Cotton-tail, who were good little bunnies, went down the lane to gather blackberries:","Флопси, Мопси и Ватный Хвостик были послушными крольчатами и пошли по тропинке собирать ежевику."],["But Peter, who was very naughty, ran straight away to Mr. McGregor's garden, and squeezed under the gate!","А Питер, который был очень непослушным, побежал прямиком в сад мистера Макгрегора и протиснулся под калиткой!"]],
+    [["First he ate some lettuces and some French beans; and then he ate some radishes;","Сначала он съел немного салата и стручковой фасоли, а потом — немного редиски."],["And then, feeling rather sick, he went to look for some parsley.","А потом, почувствовав, что его подташнивает, отправился искать петрушку."],["But round the end of a cucumber frame, whom should he meet but Mr. McGregor!","Но за углом огуречного парника — кого бы вы думали он встретил? Мистера Макгрегора!"]]]},
+{id:"velveteen",bk:"The Velveteen Rabbit",au:"Марджери Уильямс",y:1922,lv:2,
+ ctx:"Плюшевый Кролик живёт в детской среди других игрушек. Старый Кожаный Конь — самая мудрая игрушка в комнате.",
+ sm:"Игрушка становится «настоящей» не от того, как её сделали, а от любви ребёнка. Конь честно говорит, что это иногда больно. Но когда тебя по-настоящему любят, боль уже не страшна.",
+ g:"",
+ p:[[["“What is REAL?” asked the Rabbit one day, when they were lying side by side near the nursery fender, before Nana came to tidy the room.","«Что такое НАСТОЯЩИЙ?» — спросил однажды Кролик, когда они лежали рядышком у каминной решётки в детской, пока не пришла няня прибраться."],["“Does it mean having things that buzz inside you and a stick-out handle?”","«Это когда внутри у тебя что-то жужжит и снаружи торчит ручка?»"]],
+    [["“Real isn't how you are made,” said the Skin Horse.","«Настоящий — это не то, как тебя сделали, — сказал Кожаный Конь."],["“It's a thing that happens to you.","Это то, что с тобой случается."],["When a child loves you for a long, long time, not just to play with, but REALLY loves you, then you become Real.”","Когда ребёнок любит тебя долго-долго, не просто играет с тобой, а ПО-НАСТОЯЩЕМУ любит, тогда ты становишься Настоящим»."]],
+    [["“Does it hurt?” asked the Rabbit.","«А это больно?» — спросил Кролик."],["“Sometimes,” said the Skin Horse, for he was always truthful.","«Иногда, — ответил Кожаный Конь, потому что всегда говорил правду."],["“When you are Real you don't mind being hurt.”","Когда ты Настоящий, тебе уже не страшно, что будет больно»."]]]},
+{id:"peterpan",bk:"Peter Pan",au:"Джеймс Барри",y:1911,lv:2,
+ ctx:"Самое начало книги. Девочка Венди ещё совсем маленькая.",
+ sm:"Все дети вырастают — кроме одного, Питера Пэна. А Венди поняла, что вырастет, когда ей было два года: мама вздохнула «Вот бы ты навсегда осталась такой!». Отсюда грустная шутка: «Два года — это начало конца».",
+ g:"",
+ p:[[["All children, except one, grow up.","Все дети, кроме одного, вырастают."],["They soon know that they will grow up, and the way Wendy knew was this.","Они скоро узнают, что вырастут, и Венди узнала это вот как."],["One day when she was two years old she was playing in a garden, and she plucked another flower and ran with it to her mother.","Однажды, когда ей было два года, она играла в саду, сорвала ещё один цветок и побежала с ним к маме."],["I suppose she must have looked rather delightful, for Mrs. Darling put her hand to her heart and cried, “Oh, why can't you remain like this for ever!”","Наверное, она выглядела совершенно очаровательно, потому что миссис Дарлинг прижала руку к сердцу и воскликнула: «Ах, почему ты не можешь остаться такой навсегда!»"],["This was all that passed between them on the subject, but henceforth Wendy knew that she must grow up.","Больше они об этом не говорили, но с тех пор Венди знала, что ей придётся вырасти."],["You always know after you are two.","После двух лет это знают все."],["Two is the beginning of the end.","Два года — это начало конца."]]]},
+{id:"cheshire",bk:"Alice's Adventures in Wonderland",au:"Льюис Кэрролл",y:1865,lv:2,
+ ctx:"Алиса заблудилась в Стране чудес и видит на дереве Чеширского Кота, который всё время улыбается.",
+ sm:"Алиса не знает, куда ей нужно, и Кот отвечает: тогда неважно, какой дорогой идти. Потом он «доказывает», что все здесь не в своём уме — и Алиса тоже, раз она сюда попала.",
+ g:"",
+ p:[[["“Would you tell me, please, which way I ought to go from here?”","«Скажите, пожалуйста, куда мне отсюда идти?»"],["“That depends a good deal on where you want to get to,” said the Cat.","«Это во многом зависит от того, куда ты хочешь попасть», — сказал Кот."],["“I don't much care where—” said Alice.","«Мне, в общем-то, всё равно куда…» — сказала Алиса."],["“Then it doesn't matter which way you go,” said the Cat.","«Тогда всё равно, куда идти», — сказал Кот."],["“—so long as I get somewhere,” Alice added as an explanation.","«…лишь бы куда-нибудь попасть», — пояснила Алиса."],["“Oh, you're sure to do that,” said the Cat, “if you only walk long enough.”","«Куда-нибудь ты обязательно попадёшь, — сказал Кот, — если только будешь идти достаточно долго»."]],
+    [["Alice felt that this could not be denied, so she tried another question.","Алиса почувствовала, что с этим не поспоришь, и попробовала задать другой вопрос."],["“What sort of people live about here?”","«А какие люди здесь живут?»"],["“In that direction,” the Cat said, waving its right paw round, “lives a Hatter: and in that direction,” waving the other paw, “lives a March Hare. Visit either you like: they're both mad.”","«Вон там, — сказал Кот, махнув правой лапой, — живёт Шляпник. А вон там, — он махнул другой лапой, — Мартовский Заяц. Навести кого хочешь: оба сумасшедшие»."]],
+    [["“But I don't want to go among mad people,” Alice remarked.","«Но я не хочу к сумасшедшим», — заметила Алиса."],["“Oh, you can't help that,” said the Cat: “we're all mad here. I'm mad. You're mad.”","«Ну, тут уж ничего не поделаешь, — сказал Кот. — Мы все здесь не в своём уме. Я не в своём уме. Ты не в своём уме»."],["“How do you know I'm mad?” said Alice.","«Откуда вы знаете, что я не в своём уме?» — спросила Алиса."],["“You must be,” said the Cat, “or you wouldn't have come here.”","«Конечно, не в своём, — ответил Кот, — иначе ты бы сюда не попала»."]]]},
+{id:"littlewomen",bk:"Little Women",au:"Луиза Мэй Олкотт",y:1868,lv:2,
+ ctx:"Начало романа. Четыре сестры Марч сидят вечером у камина накануне Рождества.",
+ sm:"Сёстры жалуются: Рождество без подарков, они бедные. Тихая Бет напоминает, что главное у них есть — родители и они сами. Но отец сейчас на войне, и все молча боятся, что он не вернётся.",
+ g:"",
+ p:[[["“Christmas won't be Christmas without any presents,” grumbled Jo, lying on the rug.","«Рождество без подарков — не Рождество», — проворчала Джо, лёжа на коврике."],["“It's so dreadful to be poor!” sighed Meg, looking down at her old dress.","«Как ужасно быть бедными!» — вздохнула Мег, глядя на своё старое платье."],["“I don't think it's fair for some girls to have plenty of pretty things, and other girls nothing at all,” added little Amy, with an injured sniff.","«По-моему, несправедливо, что у одних девочек полно красивых вещей, а у других совсем ничего», — добавила маленькая Эми и обиженно шмыгнула носом."],["“We've got Father and Mother, and each other,” said Beth contentedly from her corner.","«Зато у нас есть папа и мама, и мы друг у друга», — довольно сказала Бет из своего уголка."]],
+    [["The four young faces on which the firelight shone brightened at the cheerful words, but darkened again as Jo said sadly, “We haven't got Father, and shall not have him for a long time.”","Четыре юных лица, освещённые огнём камина, просияли от этих бодрых слов, но снова помрачнели, когда Джо грустно сказала: «Папы-то у нас нет, и долго ещё не будет»."],["She didn't say “perhaps never,” but each silently added it, thinking of Father far away, where the fighting was.","Она не сказала «может быть, никогда», но каждая мысленно добавила это, думая об отце, который был далеко, там, где шла война."]]]},
+{id:"nephew",bk:"A Christmas Carol",au:"Чарльз Диккенс",y:1843,lv:2,
+ ctx:"Канун Рождества. Скупой старик Скрудж сидит в своей конторе. Внезапно входит его весёлый племянник.",
+ sm:"Скрудж считает, что бедному нечему радоваться на Рождество. Племянник отвечает его же словами: а богатому тогда отчего хмуриться? Мысль простая: радость — не в деньгах.",
+ g:"",
+ p:[[["“A merry Christmas, uncle! God save you!” cried a cheerful voice.","«Весёлого Рождества, дядюшка! Храни вас Бог!» — воскликнул жизнерадостный голос."],["It was the voice of Scrooge's nephew, who came upon him so quickly that this was the first intimation he had of his approach.","Это был голос племянника Скруджа, который появился так внезапно, что Скрудж узнал о его приходе только по этим словам."],["“Bah!” said Scrooge, “Humbug!”","«Вздор! — сказал Скрудж. — Чепуха!»"]],
+    [["“Christmas a humbug, uncle!” said Scrooge's nephew. “You don't mean that, I am sure?”","«Рождество — чепуха, дядюшка? — сказал племянник. — Вы ведь это не всерьёз?»"],["“I do,” said Scrooge.","«Всерьёз», — сказал Скрудж."],["“Merry Christmas! What right have you to be merry? What reason have you to be merry? You're poor enough.”","«Весёлого Рождества! Какое у тебя право веселиться? Какой у тебя повод для веселья? Ты же беден»."],["“Come, then,” returned the nephew gaily. “What right have you to be dismal? What reason have you to be morose? You're rich enough.”","«Ну так что же, — весело ответил племянник. — Какое у вас право хмуриться? Какой у вас повод для мрачности? Вы ведь богаты»."]]]},
+{id:"anne",bk:"Anne of Green Gables",au:"Люси Мод Монтгомери",y:1908,lv:2,
+ ctx:"Рыжая болтушка Энн живёт у строгой Мариллы. Вечером Энн расстроена: сегодня она опять напутала.",
+ sm:"Энн радуется, что завтра — новый день без единой ошибки. Марилла ворчит: Энн ошибается постоянно. Но Энн не сдаётся: зато одну и ту же ошибку она дважды не делает. Отличный настрой для изучения английского.",
+ g:"",
+ p:[[["“Marilla, isn't it nice to think that tomorrow is a new day with no mistakes in it yet?”","«Марилла, правда, приятно думать, что завтра — новый день, в котором ещё нет ни одной ошибки?»"],["“I'll warrant you'll make plenty in it,” said Marilla.","«Ручаюсь, ты наделаешь в нём кучу ошибок», — сказала Марилла."],["“I never saw your beat for making mistakes, Anne.”","«В жизни не видела, чтобы кто-нибудь ошибался чаще тебя, Энн»."]],
+    [["“Yes, and well I know it,” admitted Anne mournfully.","«Да, и я это прекрасно знаю», — печально признала Энн."],["“But have you ever noticed one encouraging thing about me, Marilla? I never make the same mistake twice.”","«Но вы замечали во мне одну обнадёживающую вещь, Марилла? Я никогда не делаю одну и ту же ошибку дважды»."],["“I don't know as that's much benefit when you're always making new ones.”","«Не знаю, много ли от этого толку, если ты всё время делаешь новые»."]]]},
+{id:"garden",bk:"The Secret Garden",au:"Фрэнсис Ходжсон Бёрнетт",y:1911,lv:2,
+ ctx:"Начало романа. Девочку Мэри, выросшую в Индии, отправляют в Англию к дяде.",
+ sm:"Мэри — некрасивая, болезненная и угрюмая девочка. Неудивительно: родителям она была не нужна, её растила няня, а мать просила держать дочку подальше от глаз.",
+ g:"",
+ p:[[["When Mary Lennox was sent to Misselthwaite Manor to live with her uncle everybody said she was the most disagreeable-looking child ever seen.","Когда Мэри Леннокс отправили жить к дяде в поместье Мисселтуэйт, все говорили, что неприятнее ребёнка на вид они в жизни не видели."],["It was true, too.","И это была правда."],["She had a little thin face and a little thin body, thin light hair and a sour expression.","У неё было худенькое личико, худенькое тельце, жиденькие светлые волосы и кислое выражение лица."],["Her hair was yellow, and her face was yellow because she had been born in India and had always been ill in one way or another.","Волосы у неё были жёлтые, и лицо тоже было жёлтым, потому что она родилась в Индии и всё время чем-нибудь болела."]],
+    [["Her father had held a position under the English Government and had always been busy and ill himself, and her mother had been a great beauty who cared only to go to parties and amuse herself with gay people.","Её отец служил английскому правительству и сам вечно был занят и болен, а мать была красавицей, которой хотелось только ходить на приёмы и веселиться в шумной компании."],["She had not wanted a little girl at all, and when Mary was born she handed her over to the care of an Ayah, who was made to understand that if she wished to please the Mem Sahib she must keep the child out of sight as much as possible.","Девочка ей была совсем не нужна, и когда Мэри родилась, мать отдала её на попечение няне-индианке, которой дали понять: если хочешь угодить госпоже, держи ребёнка подальше от её глаз."]]]},
+{id:"tom",bk:"The Adventures of Tom Sawyer",au:"Марк Твен",y:1876,lv:2,
+ ctx:"Первая страница романа. Тётя Полли ищет своего племянника Тома.",
+ sm:"Тётя Полли зовёт Тома, а его нигде нет. Очки у неё «для красоты» — сквозь них она ничего не видит. Том, конечно, прячется и проказничает, а тётя грозится его наказать.",
+ g:"",
+ p:[[["“TOM!”","«ТОМ!»"],["No answer.","Нет ответа."],["“TOM!”","«ТОМ!»"],["No answer.","Нет ответа."],["“What's gone with that boy, I wonder? You TOM!”","«Куда же подевался этот мальчишка? Том, кому говорю!»"],["No answer.","Нет ответа."]],
+    [["The old lady pulled her spectacles down and looked over them about the room; then she put them up and looked out under them.","Старушка спустила очки на нос и оглядела комнату поверх них, потом подняла очки на лоб и посмотрела из-под них."],["She seldom or never looked through them for so small a thing as a boy; they were her state pair, the pride of her heart, and were built for “style,” not service—she could have seen through a pair of stove-lids just as well.","Сквозь очки она редко, а то и никогда не смотрела на такую мелочь, как мальчишка: это были её парадные очки, гордость её сердца, и носила она их «для красоты», а не для дела — с тем же успехом она могла бы смотреть сквозь две печные заслонки."],["She looked perplexed for a moment, and then said, not fiercely, but still loud enough for the furniture to hear: “Well, I lay if I get hold of you I'll—”","Она на мгновение растерялась, а потом сказала — не грозно, но всё же достаточно громко, чтобы услышала мебель: «Ну, попадись ты мне только, я тебе…»"]]]},
+{id:"ozhouse",bk:"The Wonderful Wizard of Oz",au:"Лаймен Фрэнк Баум",y:1900,lv:2,
+ ctx:"Начало сказки. Мы знакомимся с домом Дороти в Канзасе — пока ещё до урагана.",
+ sm:"Дороти живёт с дядей и тётей в бедном крошечном домике посреди голой степи. Вся мебель — плита, шкаф, стол, стулья и кровати. Единственное убежище — яма от ураганов. Это важно: скоро ураган унесёт дом.",
+ g:"",
+ p:[[["Dorothy lived in the midst of the great Kansas prairies, with Uncle Henry, who was a farmer, and Aunt Em, who was the farmer's wife.","Дороти жила посреди огромных канзасских прерий с дядей Генри, фермером, и тётей Эм, его женой."],["Their house was small, for the lumber to build it had to be carried by wagon many miles.","Дом у них был маленький, ведь брёвна для него пришлось везти на телеге за много миль."],["There were four walls, a floor and a roof, which made one room; and this room contained a rusty looking cookstove, a cupboard for the dishes, a table, three or four chairs, and the beds.","Четыре стены, пол и крыша — вот и вся единственная комната. А в комнате были ржавая на вид плита, шкаф для посуды, стол, три или четыре стула и кровати."]],
+    [["Uncle Henry and Aunt Em had a big bed in one corner, and Dorothy a little bed in another corner.","У дяди Генри и тёти Эм в одном углу стояла большая кровать, а у Дороти в другом — маленькая."],["There was no garret at all, and no cellar—except a small hole dug in the ground, called a cyclone cellar, where the family could go in case one of those great whirlwinds arose, mighty enough to crush any building in its path.","Чердака не было вовсе, и подвала тоже — только небольшая яма в земле, «погреб от урагана», куда семья могла спрятаться, если поднимется один из тех страшных смерчей, что сносят любой дом на своём пути."]]]},
+{id:"hound",bk:"The Hound of the Baskervilles",au:"Артур Конан Дойл",y:1902,lv:3,
+ ctx:"Утро на Бейкер-стрит. Вчера к Холмсу приходил посетитель, не застал его и забыл свою трость.",
+ sm:"Холмс сидит к Ватсону спиной, но знает, что тот взял трость. Ватсон думает, что у Холмса глаза на затылке. Секрет прост: Холмс видит отражение в блестящем кофейнике.",
+ g:"",
+ p:[[["Mr. Sherlock Holmes, who was usually very late in the mornings, save upon those not infrequent occasions when he was up all night, was seated at the breakfast table.","Мистер Шерлок Холмс, который обычно вставал очень поздно, если не считать нередких случаев, когда он вовсе не ложился, сидел за завтраком."],["I stood upon the hearth-rug and picked up the stick which our visitor had left behind him the night before.","Я стоял на коврике у камина и взял в руки трость, которую забыл у нас вчерашний посетитель."]],
+    [["“Well, Watson, what do you make of it?”","«Ну, Ватсон, что вы о ней скажете?»"],["Holmes was sitting with his back to me, and I had given him no sign of my occupation.","Холмс сидел ко мне спиной, и я ничем не выдал, чем занят."],["“How did you know what I was doing? I believe you have eyes in the back of your head.”","«Как вы узнали, что я делаю? По-моему, у вас глаза на затылке»."],["“I have, at least, a well-polished, silver-plated coffee-pot in front of me,” said he.","«По крайней мере, передо мной стоит начищенный посеребрённый кофейник», — сказал он."]]]},
+{id:"beauty",bk:"Black Beauty",au:"Анна Сьюэлл",y:1877,lv:2,
+ ctx:"Роман написан от лица коня по кличке Красавчик. Здесь он вспоминает своё детство.",
+ sm:"Конь вспоминает место, где вырос: луг, пруд с кувшинками, ручей, еловая роща и дом хозяина. Пока он был жеребёнком, он пил мамино молоко и всегда был рядом с ней — днём и ночью.",
+ g:"",
+ p:[[["The first place that I can well remember was a large pleasant meadow with a pond of clear water in it.","Первое место, которое я хорошо помню, — большой приятный луг с прудом чистой воды."],["Some shady trees leaned over the pond, and rushes and water-lilies grew at the deep end.","Над прудом склонялись тенистые деревья, а там, где поглубже, росли камыши и кувшинки."],["Over the hedge on one side we looked into a ploughed field, and on the other we looked over a gate at our master's house, which stood by the roadside; at the top of the meadow was a grove of fir trees, and at the bottom a running brook overhung by a steep bank.","С одной стороны, за живой изгородью, было вспаханное поле, а с другой, за воротами, — дом нашего хозяина у самой дороги. В верхней части луга росла еловая роща, а внизу бежал ручей под крутым берегом."]],
+    [["While I was young I lived upon my mother's milk, as I could not eat grass.","Пока я был маленьким, я питался маминым молоком, потому что траву есть ещё не мог."],["In the day time I ran by her side, and at night I lay down close by her.","Днём я бегал рядом с ней, а ночью ложился к ней поближе."]]]},
+{id:"observe",bk:"A Scandal in Bohemia",au:"Артур Конан Дойл",y:1891,lv:3,
+ ctx:"Вечер на Бейкер-стрит. Холмс только что «вычислил» по мелочам, чем Ватсон занимался последние дни.",
+ sm:"Ватсон признаётся: объяснения Холмса всегда кажутся простыми, а сам он догадаться не может. Холмс отвечает: Ватсон смотрит, но не наблюдает. Пример — ступеньки: Ватсон ходил по ним сотни раз и не знает, сколько их. А Холмс знает — семнадцать.",
+ g:"",
+ p:[[["“When I hear you give your reasons,” I remarked, “the thing always appears to me to be so ridiculously simple that I could easily do it myself, though at each successive instance of your reasoning I am baffled until you explain your process.","«Когда я слушаю ваши объяснения, — заметил я, — всё кажется мне до смешного простым, я и сам бы так смог. И всё же каждый раз я в тупике, пока вы не объясните ход своих мыслей."],["And yet I believe that my eyes are as good as yours.”","А ведь глаза у меня, по-моему, не хуже ваших»."]],
+    [["“Quite so,” he answered, lighting a cigarette, and throwing himself down into an armchair.","«Совершенно верно», — ответил он, закуривая сигарету и откидываясь в кресле."],["“You see, but you do not observe. The distinction is clear.","«Вы смотрите, но не наблюдаете. Разница очевидна."],["For example, you have frequently seen the steps which lead up from the hall to this room.”","Например, вы часто видели ступеньки, которые ведут из прихожей в эту комнату»."],["“Frequently.”","«Часто»."],["“How often?”","«Сколько раз?»"],["“Well, some hundreds of times.”","«Ну, несколько сотен раз»."],["“Then how many are there?”","«Тогда сколько их?»"],["“How many? I don't know.”","«Сколько? Не знаю»."],["“Quite so! You have not observed. And yet you have seen. That is just my point.","«Вот именно! Вы не наблюдали. А видеть — видели. В этом всё и дело."],["Now, I know that there are seventeen steps, because I have both seen and observed.”","А я знаю, что ступенек семнадцать, потому что я и видел, и наблюдал»."]]]},
+{id:"giant",bk:"The Selfish Giant",au:"Оскар Уайльд",y:1888,lv:2,
+ ctx:"Начало сказки. У Великана есть прекрасный сад, а сам он давно в отъезде.",
+ sm:"Пока Великана нет, дети играют в его саду. Вернувшись, он их прогоняет и строит стену с табличкой «Посторонним вход воспрещён». Эгоизм. Дальше в сказке без детей в сад не придёт даже весна.",
+ g:"",
+ p:[[["Every afternoon, as they were coming from school, the children used to go and play in the Giant's garden.","Каждый день после школы дети ходили играть в сад Великана."],["It was a large lovely garden, with soft green grass.","Это был большой чудесный сад с мягкой зелёной травой."]],
+    [["One day the Giant came back.","Однажды Великан вернулся."],["He had been to visit his friend the Cornish ogre, and had stayed with him for seven years.","Он гостил у своего друга, корнуоллского великана-людоеда, и пробыл у него семь лет."],["After the seven years were over he had said all that he had to say, for his conversation was limited, and he determined to return to his own castle.","За семь лет он сказал всё, что мог сказать (поговорить он был не мастер), и решил вернуться в свой замок."],["When he arrived he saw the children playing in the garden.","Приехав, он увидел, что в его саду играют дети."]],
+    [["“What are you doing here?” he cried in a very gruff voice, and the children ran away.","«Что вы здесь делаете?» — закричал он очень грубым голосом, и дети разбежались."],["“My own garden is my own garden,” said the Giant; “any one can understand that, and I will allow nobody to play in it but myself.”","«Мой сад — это мой сад, — сказал Великан. — Это всякому понятно, и я никому не позволю в нём играть, кроме себя самого»."],["So he built a high wall all round it, and put up a notice-board.","И он построил вокруг сада высокую стену и повесил табличку:"],["TRESPASSERS WILL BE PROSECUTED","ПОСТОРОННИМ ВХОД ВОСПРЕЩЁН. НАРУШИТЕЛИ БУДУТ НАКАЗАНЫ"],["He was a very selfish Giant.","Он был очень эгоистичным Великаном."]]]},
+{id:"magi",bk:"The Gift of the Magi",au:"О. Генри",y:1905,lv:3,
+ ctx:"Начало рассказа. Молодая жена Делла пересчитывает деньги накануне Рождества.",
+ sm:"У Деллы всего доллар восемьдесят семь центов, скопленные по центу, — она торговалась в лавках до красноты щёк. Завтра Рождество, а на подарок любимому мужу денег нет. Остаётся только упасть на кушетку и разреветься.",
+ g:"",
+ p:[[["One dollar and eighty-seven cents.","Один доллар восемьдесят семь центов."],["That was all.","Вот и всё."],["And sixty cents of it was in pennies.","Причём шестьдесят центов — монетками по одному центу."],["Pennies saved one and two at a time by bulldozing the grocer and the vegetable man and the butcher until one's cheeks burned with the silent imputation of parsimony that such close dealing implied.","Монетками, которые она выкраивала по одной-две, торгуясь с бакалейщиком, зеленщиком и мясником так, что щёки горели от их молчаливого упрёка в скупости."],["Three times Della counted it.","Три раза Делла пересчитала деньги."],["One dollar and eighty-seven cents.","Один доллар восемьдесят семь центов."],["And the next day would be Christmas.","А завтра Рождество."]],
+    [["There was clearly nothing to do but flop down on the shabby little couch and howl.","Ясно, что оставалось только плюхнуться на потёртую кушетку и разреветься."],["So Della did it.","Так Делла и сделала."]]]},
+{id:"prince",bk:"The Happy Prince",au:"Оскар Уайльд",y:1888,lv:3,
+ ctx:"Начало сказки. Над городом стоит статуя, которой все восхищаются.",
+ sm:"Статуя Принца покрыта золотом, глаза — сапфиры, на шпаге рубин. Чиновник хвалит её, но сравнивает с флюгером и тут же оговаривается: только не такая полезная. Уайльд смеётся над людьми, которые меряют всё пользой.",
+ g:"",
+ p:[[["High above the city, on a tall column, stood the statue of the Happy Prince.","Высоко над городом, на высокой колонне, стояла статуя Счастливого Принца."],["He was gilded all over with thin leaves of fine gold, for eyes he had two bright sapphires, and a large red ruby glowed on his sword-hilt.","Он весь был покрыт тонкими листочками чистого золота, вместо глаз у него были два ярких сапфира, а на рукояти шпаги горел большой красный рубин."]],
+    [["He was very much admired indeed.","Им все очень восхищались."],["“He is as beautiful as a weathercock,” remarked one of the Town Councillors who wished to gain a reputation for having artistic tastes; “only not quite so useful,” he added, fearing lest people should think him unpractical, which he really was not.","«Он красив, как флюгер», — заметил один из городских советников, который хотел прослыть ценителем искусства. «Только не так полезен», — добавил он, боясь, как бы его не сочли непрактичным человеком, каким он вовсе не был."]]]},
+{id:"aliceopen",bk:"Alice's Adventures in Wonderland",au:"Льюис Кэрролл",y:1865,lv:3,
+ ctx:"Самая первая страница «Алисы». Жаркий день, Алиса сидит с сестрой на берегу реки.",
+ sm:"Алисе скучно: в книжке сестры нет ни картинок, ни разговоров. Она лениво думает, сплести ли венок из ромашек, — и тут мимо пробегает Белый Кролик и бормочет, что опаздывает. Алису это почему-то даже не удивляет.",
+ g:"",
+ p:[[["Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, “and what is the use of a book,” thought Alice “without pictures or conversations?”","Алисе стало ужасно скучно сидеть с сестрой на берегу и ничего не делать. Раз-другой она заглянула в книжку, которую читала сестра, но там не было ни картинок, ни разговоров. «Какой толк в книжке, — подумала Алиса, — если в ней нет ни картинок, ни разговоров?»"]],
+    [["So she was considering in her own mind (as well as she could, for the hot day made her feel very sleepy and stupid), whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a White Rabbit with pink eyes ran close by her.","И она стала раздумывать (насколько вообще могла думать — от жары её клонило в сон и мысли путались), стоит ли удовольствие сплести венок из ромашек того, чтобы вставать и собирать ромашки, как вдруг мимо неё пробежал Белый Кролик с розовыми глазами."]],
+    [["There was nothing so very remarkable in that; nor did Alice think it so very much out of the way to hear the Rabbit say to itself, “Oh dear! Oh dear! I shall be late!”","Ничего особенно удивительного в этом не было. И Алиса не нашла ничего такого уж странного в том, что Кролик сказал себе под нос: «Ой-ой-ой! Я опоздаю!»"]]]},
+{id:"marley",bk:"A Christmas Carol",au:"Чарльз Диккенс",y:1843,lv:3,
+ ctx:"Самое начало повести. Рассказчик знакомит нас с компаньоном Скруджа — Марли.",
+ sm:"Повесть начинается с того, что Марли давно умер — «мёртв, как дверной гвоздь». Подпись Скруджа на документе — надёжнее некуда. Диккенс нарочно так настаивает на смерти Марли: скоро его призрак явится к Скруджу.",
+ g:"",
+ p:[[["Marley was dead: to begin with.","Начнём с того, что Марли был мёртв."],["There is no doubt whatever about that.","В этом нет ни малейшего сомнения."],["The register of his burial was signed by the clergyman, the clerk, the undertaker, and the chief mourner.","Запись о его погребении подписали священник, причетник, гробовщик и главный скорбящий."],["Scrooge signed it: and Scrooge's name was good upon 'Change, for anything he chose to put his hand to.","Подписал её и Скрудж, а подпись Скруджа ценилась на бирже, подо что бы он её ни поставил."],["Old Marley was as dead as a door-nail.","Старик Марли был мёртв, как дверной гвоздь."]],
+    [["Scrooge knew he was dead? Of course he did. How could it be otherwise?","Знал ли Скрудж, что Марли умер? Конечно, знал. Как же иначе?"],["Scrooge and he were partners for I don't know how many years.","Скрудж и Марли были компаньонами бог знает сколько лет."]]]},
+{id:"jungle",bk:"The Jungle Book",au:"Редьярд Киплинг",y:1894,lv:3,
+ ctx:"Начало истории о Маугли. Вечер в индийских горах, у пещеры волчьей семьи.",
+ sm:"Волчья семья просыпается: Мать Волчица лежит с четырьмя волчатами, Отец Волк потягивается и собирается на охоту. Скоро к их пещере приползёт человеческий детёныш — Маугли.",
+ g:"",
+ p:[[["It was seven o'clock of a very warm evening in the Seeonee hills when Father Wolf woke up from his day's rest, scratched himself, yawned, and spread out his paws one after the other to get rid of the sleepy feeling in their tips.","Было семь часов очень тёплого вечера в Сионийских горах, когда Отец Волк проснулся после дневного отдыха, почесался, зевнул и вытянул одну за другой лапы, чтобы прогнать сонливость из их кончиков."],["Mother Wolf lay with her big gray nose dropped across her four tumbling, squealing cubs, and the moon shone into the mouth of the cave where they all lived.","Мать Волчица лежала, уронив большой серый нос на четырёх барахтающихся, повизгивающих волчат, а луна светила в устье пещеры, где они все жили."],["“Augrh!” said Father Wolf. “It is time to hunt again.”","«Аур-р-р! — сказал Отец Волк. — Пора снова на охоту»."]]]},
+{id:"gatsby",bk:"The Great Gatsby",au:"Фрэнсис Скотт Фицджеральд",y:1925,lv:3,
+ ctx:"Первые строки романа. Рассказчик Ник вспоминает разговор с отцом.",
+ sm:"Отец дал Нику совет: прежде чем осуждать людей, помни, что тебе в жизни повезло больше, чем многим. Отец сказал немного, но Ник понял, что за этими словами гораздо больше.",
+ g:"",
+ p:[[["In my younger and more vulnerable years my father gave me some advice that I've been turning over in my mind ever since.","Когда я был моложе и уязвимее, отец дал мне совет, который я с тех пор не перестаю обдумывать."]],
+    [["“Whenever you feel like criticizing any one,” he told me, “just remember that all the people in this world haven't had the advantages that you've had.”","«Когда тебе захочется кого-нибудь осудить, — сказал он, — просто вспомни, что не у всех на свете были те преимущества, что были у тебя»."]],
+    [["He didn't say any more, but we've always been unusually communicative in a reserved way, and I understood that he meant a great deal more than that.","Больше он ничего не сказал, но мы с ним всегда хорошо понимали друг друга без лишних слов, и я понял, что он имел в виду гораздо больше."]]]},
+{id:"moby",bk:"Moby-Dick",au:"Герман Мелвилл",y:1851,lv:3,
+ ctx:"Знаменитое начало романа о ките. Рассказчик объясняет, почему он ушёл в море.",
+ sm:"Рассказчик признаётся: когда на душе тоска, «сырой моросящий ноябрь», он уходит в море — это его лекарство от хандры. Про ноябрь — как раз в тему.",
+ g:"",
+ p:[[["Call me Ishmael.","Зовите меня Измаил."],["Some years ago—never mind how long precisely—having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world.","Несколько лет назад — неважно, сколько именно, — когда в кошельке у меня было мало или совсем не было денег и ничто особенно не держало меня на берегу, я решил немного поплавать и посмотреть на водную часть света."],["It is a way I have of driving off the spleen and regulating the circulation.","Это мой способ прогонять хандру и налаживать кровообращение."]],
+    [["Whenever I find myself growing grim about the mouth; whenever it is a damp, drizzly November in my soul; whenever I find myself involuntarily pausing before coffin warehouses, and bringing up the rear of every funeral I meet; and especially whenever my hypos get such an upper hand of me, that it requires a strong moral principle to prevent me from deliberately stepping into the street, and methodically knocking people's hats off—then, I account it high time to get to sea as soon as I can.","Всякий раз, когда у меня мрачно сжимаются губы, когда у меня в душе сырой моросящий ноябрь, когда я невольно останавливаюсь перед лавками гробовщиков и плетусь в хвосте каждой встречной похоронной процессии, и особенно когда хандра так одолевает меня, что только твёрдые моральные принципы удерживают меня от того, чтобы выйти на улицу и методично сбивать с прохожих шляпы, — тогда я понимаю, что пора поскорее в море."]]]},
+{id:"pride",bk:"Pride and Prejudice",au:"Джейн Остин",y:1813,lv:3,
+ ctx:"Знаменитое начало романа. Миссис Беннет мечтает выдать замуж пятерых дочерей.",
+ sm:"Ироничное начало: все уверены, что богатому холостяку нужна жена — а точнее, мамам нужен такой жених для дочерей. Миссис Беннет сгорает от желания рассказать о новом соседе, а мистер Беннет дразнит её молчанием.",
+ g:"",
+ p:[[["It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.","Всем известно, что холостяк с хорошим состоянием непременно ищет себе жену."]],
+    [["However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters.","Как бы мало ни знали о чувствах и взглядах такого человека, когда он только поселяется по соседству, эта истина так прочно сидит в головах окрестных семейств, что его сразу считают законной собственностью той или иной из их дочерей."]],
+    [["“My dear Mr. Bennet,” said his lady to him one day, “have you heard that Netherfield Park is let at last?”","«Дорогой мистер Беннет, — сказала ему однажды супруга, — вы слышали, что Незерфилд-парк наконец сдан?»"],["Mr. Bennet replied that he had not.","Мистер Беннет ответил, что не слышал."],["“But it is,” returned she; “for Mrs. Long has just been here, and she told me all about it.”","«А он сдан, — возразила она. — Только что здесь была миссис Лонг и всё мне рассказала»."],["Mr. Bennet made no answer.","Мистер Беннет ничего не ответил."],["“Do you not want to know who has taken it?” cried his wife impatiently.","«Неужели вы не хотите узнать, кто его снял?» — нетерпеливо воскликнула жена."],["“You want to tell me, and I have no objection to hearing it.”","«Вы хотите мне рассказать, а я не возражаю послушать»."],["This was invitation enough.","Этого приглашения было вполне достаточно."]]]},
+{id:"twocities",bk:"A Tale of Two Cities",au:"Чарльз Диккенс",y:1859,lv:3,
+ ctx:"Первое предложение романа о Лондоне и Париже времён Французской революции. Оно очень длинное — читай по кусочкам.",
+ sm:"Время было сразу и лучшим, и худшим: и мудрым, и глупым, полным и надежды, и отчаяния. Диккенс замечает, что оно было похоже на нынешнее: о нём тоже говорили только в превосходной степени. Заодно отличная тренировка: the best, the worst.",
+ g:"",
+ p:[[["It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness,","Это было лучшее из времён, это было худшее из времён, это был век мудрости, это был век глупости,"],["it was the epoch of belief, it was the epoch of incredulity, it was the season of Light, it was the season of Darkness,","это была эпоха веры, это была эпоха неверия, это была пора Света, это была пора Тьмы,"],["it was the spring of hope, it was the winter of despair, we had everything before us, we had nothing before us, we were all going direct to Heaven, we were all going direct the other way—","это была весна надежды, это была зима отчаяния, у нас было всё впереди, у нас не было ничего впереди, мы все шли прямо в рай, мы все шли прямо в противоположную сторону, —"],["in short, the period was so far like the present period, that some of its noisiest authorities insisted on its being received, for good or for evil, in the superlative degree of comparison only.","короче говоря, то время было так похоже на нынешнее, что самые шумные его знатоки требовали говорить о нём, в хорошем или в плохом, только в превосходной степени."]]]},
+{id:"willows",bk:"The Wind in the Willows",au:"Кеннет Грэм",y:1908,lv:3,
+ ctx:"Начало повести. Весна, и Крот затеял генеральную уборку в своей норке.",
+ sm:"Крот всё утро убирался и вымотался: пыль в горле, побелка на шубке, болит спина. А снаружи весна зовёт! Он бросает кисть, ругает уборку и убегает на улицу, даже не одевшись. Знакомое чувство?",
+ g:"",
+ p:[[["The Mole had been working very hard all the morning, spring-cleaning his little home.","Крот всё утро усердно трудился — делал весеннюю уборку в своём домике."],["First with brooms, then with dusters; then on ladders and steps and chairs, with a brush and a pail of whitewash; till he had dust in his throat and eyes, and splashes of whitewash all over his black fur, and an aching back and weary arms.","Сначала мётлами, потом тряпками, потом на стремянках, ступеньках и стульях — с кистью и ведром побелки, пока пыль не набилась ему в горло и глаза, чёрная шубка не покрылась брызгами побелки, спина не разболелась, а лапы не устали."]],
+    [["Spring was moving in the air above and in the earth below and around him, penetrating even his dark and lowly little house with its spirit of divine discontent and longing.","Весна была повсюду — в воздухе наверху, в земле внизу и вокруг него, — она проникала даже в его тёмный низенький домик, принося с собой божественное беспокойство и томление."],["It was small wonder, then, that he suddenly flung down his brush on the floor, said ‘Bother!’ and ‘O blow!’ and also ‘Hang spring-cleaning!’ and bolted out of the house without even waiting to put on his coat.","Неудивительно, что он вдруг швырнул кисть на пол, сказал: «Да ну!», «Вот ещё!» и «Провались она, эта уборка!» — и выскочил из дома, даже не надев пиджака."]]]},
+{id:"frank",bk:"Frankenstein",au:"Мэри Шелли",y:1818,lv:3,
+ ctx:"Учёный Виктор Франкенштейн два года собирал из частей существо. Сейчас он пытается его оживить.",
+ sm:"Унылая ноябрьская ночь, дождь, догорающая свеча — и вдруг у безжизненного существа открывается тусклый жёлтый глаз. Оно дышит и шевелится. Классика ужасов — и снова ноябрь.",
+ g:"",
+ p:[[["It was on a dreary night of November that I beheld the accomplishment of my toils.","Унылой ноябрьской ночью я увидел, чем увенчались мои труды."],["With an anxiety that almost amounted to agony, I collected the instruments of life around me, that I might infuse a spark of being into the lifeless thing that lay at my feet.","С тревогой, похожей на муку, я собрал вокруг себя инструменты, чтобы вдохнуть искру жизни в безжизненное существо, лежавшее у моих ног."]],
+    [["It was already one in the morning; the rain pattered dismally against the panes, and my candle was nearly burnt out, when, by the glimmer of the half-extinguished light, I saw the dull yellow eye of the creature open; it breathed hard, and a convulsive motion agitated its limbs.","Был уже час ночи; дождь уныло стучал в окна, свеча почти догорела, когда в мерцании полупогасшего огонька я увидел, как открылся тусклый жёлтый глаз существа. Оно тяжело задышало, и судорога пробежала по его телу."]]]},
+{id:"jane",bk:"Jane Eyre",au:"Шарлотта Бронте",y:1847,lv:3,
+ ctx:"Первая страница романа. Сирота Джейн живёт у неласковой тёти, миссис Рид, вместе с её детьми.",
+ sm:"Джейн рада, что гулять сегодня нельзя: на прогулках она мёрзнет, нянька Бесси её ругает, а кузены сильнее и обижают её. С первых строк понятно: ей одиноко в этом доме.",
+ g:"",
+ p:[[["There was no possibility of taking a walk that day.","В тот день о прогулке не могло быть и речи."],["We had been wandering, indeed, in the leafless shrubbery an hour in the morning; but since dinner (Mrs. Reed, when there was no company, dined early) the cold winter wind had brought with it clouds so sombre, and a rain so penetrating, that further out-door exercise was now out of the question.","Утром мы, правда, побродили часок среди облетевших кустов, но после обеда (когда не было гостей, миссис Рид обедала рано) холодный зимний ветер нагнал такие мрачные тучи и такой пронизывающий дождь, что о прогулках больше нечего было и думать."]],
+    [["I was glad of it: I never liked long walks, especially on chilly afternoons: dreadful to me was the coming home in the raw twilight, with nipped fingers and toes, and a heart saddened by the chidings of Bessie, the nurse, and humbled by the consciousness of my physical inferiority to Eliza, John, and Georgiana Reed.","Я была этому рада: я никогда не любила долгих прогулок, особенно промозглыми днями. Ужасно было возвращаться домой в сырых сумерках с окоченевшими пальцами рук и ног и с сердцем, опечаленным упрёками няни Бесси и униженным мыслью о том, что я слабее Элизы, Джона и Джорджианы Рид."]]]}
+];
+  var FDICT={
+common:"above|над, наверху;added|добавил(а) (add);another|другой, ещё один;around|вокруг;been|был(а) (3-я форма be: have been);beginning|начало / was beginning to — начинала;believe|верить, полагать;built|построен, построил (build — built);cheerful|весёлый, бодрый;clear|чистый, ясный, очевидный;close|близко (close by — совсем рядом) / закрыть;cotton-tail|Ватный Хвостик (имя крольчонка);deal|a good deal — во многом, сильно / close dealing — мелочный торг;dreadful|ужасный;each|каждый (each other — друг друга);enough|достаточно (rich enough — достаточно богат);especially|особенно;ever|когда-либо (for ever — навсегда, ever since — с тех пор);except|кроме;father|отец, папа;feel|чувствовать;feeling|чувство / feeling sick — чувствуя тошноту;flopsy|Флопси (имя);gate|калитка, ворота;grass|трава;haven't|не (= have not);hear|слышать;himself|себя, сам;i'll|я (= I will);indeed|действительно, и правда;knew|знал(а) (know — knew);lady|леди, госпожа (his lady — его жена);lane|тропинка, переулок;large|большой;lay|лежал(а) (lie — lay) / I lay — (просторечие) бьюсь об заклад;make|делать (what do you make of it? — что вы об этом думаете?);making|делать, создавать (making mistakes — делать ошибки);may|может, можно;mcgregor|Макгрегор (фамилия);mean|иметь в виду, значить;mind|ум, мысли (in her own mind — про себя) / never mind — неважно;mopsy|Мопси (имя);mouth|рот, губы / вход (the mouth of the cave — вход в пещеру);much|много, сильно (I don't much care — мне не так уж важно);myself|себя, сам(а);november|ноябрь;our|наш;penetrating|пронизывающий, проникающий;peter|Питер (имя);play|играть;plenty|полно, много;question|вопрос / out of the question — исключено;quite|совсем, вполне (quite so — совершенно верно);rain|дождь;rather|довольно, слегка;really|по-настоящему, действительно;remarked|заметил(а) (remark);remember|помнить;returned|ответил(а) / вернулся (return);right|правый / право (what right have you — какое у тебя право);round|вокруг, за (round the end — за углом, all round — со всех сторон);save|кроме (save upon — за исключением) / спасать;seen|видел (see — saw — seen);shall|буду, будем (I shall be late — я опоздаю);shone|светил(а) (shine — shone);should|бы, следует;since|с тех пор / после (since dinner — после обеда);sleepy|сонный;steps|ступеньки / стремянки;such|такой;sure|уверен (you're sure to — ты обязательно);thin|худой, тонкий, жиденький (о волосах);those|те;twice|дважды;until|пока не, до;upon|на (= on);we've|мы (= we have);whenever|всякий раз, когда;wife|жена;wished|хотел(а) (wish);wonder|I wonder — интересно / small wonder — неудивительно;world|мир, свет;would|бы / would be — будет (о будущем в прошлом);yet|ещё (в отрицании), уже (в вопросе) / and yet — и всё же;mrs|миссис;as|как, так как (as well as she could — как могла, as … as — такой же, как);its|его, её (о предмете или животном);lovely|чудесный, прелестный;nearly|почти;usually|обычно;being|быть (don't mind being hurt — не страшно, что будет больно)",
+rabbit1:"accident|несчастный случай;along|run along — бегите, ступайте;fir-tree|ель;mischief|шалость (get into mischief — набедокурить);pie|пирог;root|корень;sand-bank|песчаный пригорок;underneath|под",
+rabbit2:"baker's|булочная (to the baker's — в булочную);ate|съел (eat — ate);beans|бобы, фасоль (French beans — стручковая фасоль);blackberries|ежевика;bought|купила (buy — bought);brown|коричневый (brown bread — чёрный хлеб);bunnies|крольчата;buns|булочки;cucumber|огурец (cucumber frame — огуречный парник);currant|изюм, смородина (currant buns — булочки с изюмом);frame|рама, парник;gather|собирать;lettuces|салат-латук;loaf|буханка;naughty|непослушный;parsley|петрушка;radishes|редиска;sick|feeling sick — подташнивает;squeezed|протиснулся (squeeze);straight|прямо (straight away — сразу, прямиком);umbrella|зонтик;whom|кого (whom should he meet — кого бы он встретил);wood|лес, роща",
+velveteen:"become|становиться;buzz|жужжать;fender|каминная решётка;handle|ручка;horse|конь, лошадь;nana|Нана (няня);nursery|детская (комната);real|настоящий;skin|кожа (Skin Horse — Кожаный Конь);sometimes|иногда;tidy|прибраться;truthful|правдивый;side|side by side — бок о бок, рядышком;stick-out|торчащий;mind|don't mind — не против, не страшно",
+peterpan:"darling|Дарлинг (фамилия) / дорогой;delightful|очаровательный;flower|цветок;grow|расти (grow up — вырастать);henceforth|с этих пор;plucked|сорвала (pluck);remain|оставаться;subject|тема (on the subject — на эту тему);suppose|полагать (I suppose — наверное);wendy|Венди (имя)",
+cheshire:"among|среди (go among — идти к, быть среди);denied|отрицать (could not be denied — не поспоришь);direction|направление (in that direction — вон там);explanation|объяснение;ought|ought to — следует, должна;paw|лапа;somewhere|куда-нибудь, где-нибудь;sort|вид, сорт (what sort of — какие);they're|они (= they are);tried|попробовала (try);waving|махая (wave);wouldn't|бы не (= would not);get|get to — попасть, добраться;help|can't help that — ничего не поделаешь;either|любой из двух (visit either — навести любого)",
+littlewomen:"amy|Эми (имя);beth|Бет (имя);brightened|просияли (brighten);contentedly|довольно, с удовлетворением;darkened|помрачнели (darken);dress|платье;fair|справедливый;fighting|бои, война;firelight|свет огня в камине;grumbled|проворчала (grumble);injured|обиженный;jo|Джо (имя);meg|Мег (имя);perhaps|может быть;pretty|красивый, милый;rug|коврик;sighed|вздохнула (sigh);silently|молча, мысленно;sniff|шмыганье носом;won't|не будет (= will not)",
+nephew:"approach|приближение, приход;dismal|мрачный, унылый;gaily|весело;intimation|знак, намёк;morose|угрюмый;reason|причина, повод;save|God save you — храни вас Бог",
+anne:"admitted|призналась (admit);anne|Энн (имя);beat|I never saw your beat — не видела никого, кто бы тебя переплюнул;benefit|польза;encouraging|обнадёживающий;marilla|Марилла (имя);mistake|ошибка;mistakes|ошибки;mournfully|печально;nice|приятный, милый;noticed|заметила (notice);warrant|ручаться (I'll warrant — ручаюсь);you'll|ты (= you will)",
+garden:"amuse|развлекать (amuse herself — развлекаться);ayah|няня (в Индии);beauty|красавица / красота;born|рождённый (she had been born — она родилась);disagreeable-looking|неприятный на вид;english|английский;expression|выражение (лица);gay|весёлый (старое значение);government|правительство;held|занимал (hold a position — занимать должность);herself|себя, сама;india|Индия;lennox|Леннокс (фамилия);manor|поместье, усадьба;mary|Мэри (имя);mem|Mem Sahib — госпожа (так в Индии звали англичанок);misselthwaite|Мисселтуэйт (название поместья);position|должность;possible|возможный (as much as possible — как можно больше);sahib|Mem Sahib — госпожа;sight|вид (out of sight — с глаз долой);sour|кислый;true|правда, верный;cared|хотела, интересовалась (care to — хотеть);handed|handed over — передала, отдала (hand);please|угодить (to please) / пожалуйста",
+tom:"fiercely|свирепо, грозно;furniture|мебель;gone|what's gone with — куда подевался (go — went — gone);hold|get hold of — поймать, схватить;moment|мгновение;pair|пара;perplexed|озадаченный;pride|гордость;pulled|сдвинула (pull — тянуть);seldom|редко;service|польза, служба;spectacles|очки;state|парадный (state pair — парадные очки);still|всё же, всё ещё;stove-lids|печные заслонки, конфорки;style|стиль, «для красоты»;tom|Том (имя)",
+ozhouse:"arose|поднимался (arise — arose);build|строить;building|здание;carried|везли (carry — нести, везти);case|in case — на случай, если;contained|в ней были (contain — содержать);cookstove|кухонная плита;crush|раздавить, снести;cupboard|шкаф (для посуды);cyclone|циклон, ураган (cyclone cellar — убежище от урагана);dishes|посуда;dug|вырытый (dig — dug);em|Эм (имя);garret|чердак;henry|Генри (имя);lumber|пиломатериалы, доски;midst|середина (in the midst of — посреди);mighty|мощный;miles|мили;path|путь (in its path — на своём пути);prairies|прерии, степь;roof|крыша;wagon|повозка, телега;whirlwinds|смерчи, вихри;great|огромный / великий",
+hound:"breakfast|завтрак;coffee-pot|кофейник;front|in front of — перед;given|дал (give — gave — given);hearth-rug|коврик у камина;infrequent|редкий (not infrequent — нередкий);least|at least — по крайней мере;occasions|случаи;occupation|занятие;picked|picked up — взял в руки (pick up);seated|сидел (was seated);sign|знак;silver-plated|посеребрённый;well-polished|хорошо начищенный;late|поздно (late in the mornings — поздно по утрам);up|вверх / was up all night — всю ночь не ложился;back|спина (with his back to me — спиной ко мне)",
+beauty:"bottom|низ, нижняя часть;brook|ручей;fir|ель (fir trees — ели);grew|росли (grow — grew);grove|роща;hedge|живая изгородь;leaned|склонялись (lean);master's|хозяина (чей? 's);meadow|луг;milk|молоко;overhung|нависал (overhang);pleasant|приятный;ploughed|вспаханный (plough);pond|пруд;roadside|обочина (by the roadside — у дороги);rushes|камыши;shady|тенистый;steep|крутой;top|верх;water-lilies|кувшинки",
+observe:"appears|кажется (appear);armchair|кресло;baffled|в тупике, озадачен;cigarette|сигарета;distinction|различие, разница;easily|легко;example|пример (for example — например);explain|объяснить;frequently|часто;instance|случай;lead|вести (lead up — вести наверх);observe|наблюдать, замечать;observed|наблюдали, заметили (observe);point|суть (that is just my point — в этом всё дело);process|ход, процесс;reasoning|рассуждение;reasons|доводы, объяснения;ridiculously|до смешного;seventeen|семнадцать;simple|простой;successive|следующий (at each successive instance — каждый раз);though|хотя;throwing|throwing himself down — плюхаясь, откидываясь;hall|прихожая, холл;lighting|закуривая (light — зажигать)",
+giant:"afternoon|день, вторая половина дня (every afternoon — каждый день после обеда);allow|позволять;arrived|приехал (arrive);castle|замок;conversation|разговор (his conversation was limited — поговорить он был не мастер);cornish|корнуоллский (из Корнуолла);determined|решил (determine);gruff|грубый, хриплый;limited|ограниченный;notice-board|табличка, доска объявлений;ogre|великан-людоед;prosecuted|наказаны по закону (prosecute);return|вернуться;selfish|эгоистичный;soft|мягкий;stayed|пробыл, гостил (stay);trespassers|нарушители (кто зашёл без спроса);used|used to — обычно, бывало (о прошлом);over|над / be over — закончиться",
+magi:"bulldozing|выжимая, торгуясь (bulldoze — давить);burned|горели (burn);butcher|мясник;cents|центы;cheeks|щёки;clearly|ясно, явно;couch|кушетка, диван;counted|пересчитала (count);dealing|торг (close dealing — мелочный торг);della|Делла (имя);dollar|доллар;eighty-seven|восемьдесят семь;flop|плюхнуться;grocer|бакалейщик;howl|выть, реветь;implied|подразумевал (imply);imputation|упрёк, обвинение;parsimony|скупость;pennies|монетки по центу;shabby|потёртый;silent|молчаливый;sixty|шестьдесят;vegetable|овощ (vegetable man — зеленщик);saved|скоплены (save — копить)",
+prince:"admired|восхищались (admire);artistic|художественный (artistic tastes — вкус к искусству);column|колонна;councillors|советники (Town Councillors — городские советники);fearing|боясь (fear);gain|заслужить, получить;gilded|позолоченный;glowed|сиял, горел (glow);lest|как бы не (fearing lest — боясь, как бы);prince|принц;reputation|репутация;ruby|рубин;sapphires|сапфиры;statue|статуя;sword-hilt|рукоять шпаги;tall|высокий;tastes|вкусы;unpractical|непрактичный;useful|полезный;weathercock|флюгер-петушок;leaves|листочки (leaf — leaves);fine|тонкий, чистый (fine gold — чистое золото);having|for having — за то, что у него есть",
+aliceopen:"considering|раздумывала (consider);conversations|разговоры;daisies|ромашки;daisy-chain|венок из ромашек;itself|себе, сам (say to itself — сказать себе под нос);nor|и не (nor did Alice think — и Алиса не думала);peeped|заглянула (peep);picking|срывать, собирать (pick);pink|розовый;pleasure|удовольствие;remarkable|удивительный, примечательный;trouble|хлопоты (worth the trouble — стоит хлопот);whether|ли (whether it would be — будет ли);worth|стоящий (be worth — стоить того);bank|берег (реки);use|польза (what is the use of — какой толк в);way|out of the way — необычный, странный;tired|get tired of — устать от, наскучить;having|having nothing to do — не иметь занятия",
+marley:"anything|что угодно;begin|начинать (to begin with — начнём с того, что);burial|погребение;chief|главный;chose|выбрал (choose — chose: anything he chose to put his hand to — подо что бы он ни подписался);clergyman|священник;course|of course — конечно;door-nail|гвоздь на двери (dead as a door-nail — мёртв окончательно);doubt|сомнение;mourner|скорбящий (на похоронах);otherwise|иначе;register|запись, книга регистрации;signed|подписал (sign);undertaker|гробовщик;whatever|никакой (no doubt whatever — ни малейшего сомнения);change|'Change — биржа (сокращение от Exchange);clerk|церковный служка, причетник",
+jungle:"across|поперёк, через;augrh|волчье ворчание (звук);cave|пещера;cubs|детёныши, волчата;gray|серый (американское написание grey);hills|холмы, горы;hunt|охотиться;moon|луна;paws|лапы;rest|отдых;rid|get rid of — избавиться от;scratched|почесался (scratch);seeonee|Сиони (горы в Индии);spread|вытянул (spread out — раскинуть);squealing|повизгивающие (squeal);tips|кончики;tumbling|барахтающиеся (tumble);woke|проснулся (wake up — woke up);wolf|волк;yawned|зевнул (yawn)",
+gatsby:"advantages|преимущества;advice|совет;communicative|откровенный, общительный;criticizing|осуждать, критиковать (criticize);i've|я (= I have);meant|имел в виду (mean — meant);reserved|сдержанный (in a reserved way — сдержанно);turning|turning over in my mind — обдумываю (turn over);understood|понял (understand — understood);unusually|необычно;vulnerable|уязвимый;you've|ты (= you have);younger|моложе (young → younger);feel|feel like doing — хотеться что-то сделать",
+moby:"account|считать (I account it — я считаю);call|звать (Call me — зовите меня);circulation|кровообращение;coffin|гроб (coffin warehouses — лавки гробовщиков);damp|сырой;deliberately|нарочно, намеренно;driving|driving off — прогоняя (drive off);drizzly|моросящий;find|find myself — замечать за собой;funeral|похороны;grim|мрачный;growing|становясь (grow — становиться);hypos|хандра (от hypochondria);interest|интересовать;involuntarily|невольно;ishmael|Измаил (имя);knocking|knocking off — сбивать (knock off);methodically|методично;moral|моральный;part|часть;particular|особенный (nothing particular — ничего особенного);pausing|останавливаясь (pause);precisely|точно, именно;prevent|помешать, удержать;principle|принцип;purse|кошелёк;rear|тыл, хвост (bringing up the rear — плестись позади);regulating|налаживать (regulate);requires|требует (require);sail|плыть под парусом;shore|берег (on shore — на суше);soul|душа;spleen|хандра, тоска;stepping|выходить (step into the street);upper|верхний (get the upper hand — одержать верх);warehouses|склады, лавки;watery|водный;high|high time — самое время",
+pride:"acknowledged|признанный (universally acknowledged — всеми признанная);bennet|Беннет (фамилия);considered|считается (consider);daughters|дочери;entering|entering a neighbourhood — поселяясь по соседству (enter);feelings|чувства;fixed|закреплён, засел (fix);fortune|состояние, богатство;hearing|слушать (no objection to hearing it — не против послушать);however|как бы ни / однако;impatiently|нетерпеливо;invitation|приглашение;known|известный (know — knew — known);let|сдан внаём (is let — сдан);minds|умы, головы;neighbourhood|соседство, округа;netherfield|Незерфилд (название поместья);objection|возражение;possession|владение (in possession of — владеющий);property|собственность;replied|ответил (reply);rightful|законный;single|холостой, одинокий;surrounding|окрестный;taken|снял (take — took — taken);truth|истина, правда;universally|всеми, повсеместно;views|взгляды;want|in want of — нуждающийся в",
+twocities:"being|its being received — чтобы его воспринимали;age|век, эпоха;authorities|знатоки, авторитеты;belief|вера;best|лучший (the best — самый лучший);comparison|сравнение (degree of comparison — степень сравнения);darkness|тьма;degree|степень;despair|отчаяние;direct|прямо;epoch|эпоха;evil|зло (for good or for evil — к добру или к худу);foolishness|глупость;heaven|рай, небеса;hope|надежда;incredulity|неверие;insisted|настаивали (insist);noisiest|самые шумные (noisy → noisiest);period|период, время;received|восприниматься (be received);short|in short — короче говоря;superlative|превосходная (о степени сравнения);wisdom|мудрость;worst|худший (the worst — самый плохой);season|пора, время;far|so far — настолько",
+willows:"aching|ноющий (aching back — болит спина);air|воздух;also|также;below|внизу;blow|O blow! — Вот ещё! Тьфу ты! (возглас досады);bolted|выскочил, рванул (bolt);bother|Bother! — Да ну! Досада!;brooms|мётлы;brush|кисть;discontent|недовольство, беспокойство;divine|божественный;dust|пыль;dusters|тряпки для пыли;earth|земля;flung|швырнул (fling — flung);fur|шерсть, мех;hang|Hang …! — К чёрту …! Провались …!;ladders|лестницы-стремянки;lowly|скромный, низенький;mole|крот;o|О (возглас);pail|ведро;splashes|брызги;spring-cleaning|весенняя уборка;throat|горло;till|пока не;weary|усталый;whitewash|побелка;longing|тоска, томление",
+frank:"accomplishment|завершение, итог;against|о, против (against the panes — в окна);agitated|сотрясало (agitate);agony|мука;almost|почти;already|уже;amounted|amounted to — доходила до (amount to);anxiety|тревога;beheld|увидел (behold — beheld, книжное);breathed|задышало (breathe);burnt|burnt out — догорела (burn);candle|свеча;collected|собрал (collect);convulsive|судорожный;creature|существо;dismally|уныло;dreary|унылый, тоскливый;dull|тусклый;eye|глаз;feet|ноги, ступни (at my feet — у моих ног);glimmer|мерцание;half-extinguished|полупогасший;infuse|вдохнуть, влить;instruments|инструменты;lifeless|безжизненный;limbs|руки и ноги, конечности;motion|движение;panes|оконные стёкла;pattered|стучал (patter);spark|искра;toils|труды;being|бытие, жизнь (a spark of being — искра жизни);hard|тяжело (breathed hard — тяжело задышало)",
+jane:"afternoons|дни (после полудня);bessie|Бесси (имя);brought|принёс (bring — brought);chidings|упрёки, выговоры;chilly|промозглый, зябкий;company|гости;consciousness|сознание, мысль;dined|обедала (dine);eliza|Элиза (имя);exercise|прогулка, физическая нагрузка;fingers|пальцы (рук);further|дальнейший;georgiana|Джорджиана (имя);glad|рад;humbled|униженный (humble);inferiority|неполноценность (physical inferiority — физическая слабость);leafless|облетевший, без листьев;nipped|прихваченный морозом, окоченевший;nurse|няня;physical|физический;possibility|возможность;raw|сырой, промозглый;reed|Рид (фамилия);saddened|опечаленный (sadden);shrubbery|кустарник;sombre|мрачный;toes|пальцы ног;twilight|сумерки;wandering|бродили (wander);wind|ветер;out-door|на свежем воздухе"
+};
   var CD=parseD(BDICT.common);
   BOOKS.forEach(function(b,bi){b.pos=bi;b.D=[parseD(BDICT[b.id]),CD];b.ch.forEach(function(c,ci){c.id=b.id+"-"+(ci+1);c.n=ci;c.S=[];c.p.forEach(function(par,pi){par.forEach(function(s){c.S.push({en:s[0],ru:s[1],pi:pi})})});
     c.words=c.S.map(function(s){return s.en}).join(" ").split(/\s+/).length;c.min=Math.max(2,Math.round(c.words/40))})});
+  // Отрывки из настоящих книг: оригинальный текст, перевод по запросу
+  var FC=parseD(FDICT.common),ALLB={};["alice","duck","oz","carol","holmes"].forEach(function(k){var d=parseD(BDICT[k]);for(var x in d)ALLB[x]=d[x]});
+  var LV=["","★ легко","★★ средне","★★★ трудно"];
+  FRAGS.forEach(function(f,i){f.n=i;f.G=parseD(FDICT[f.id]||"");f.D=[f.G,FC,CD,ALLB];f.S=[];f.p.forEach(function(par,pi){par.forEach(function(s){f.S.push({en:s[0],ru:s[1],pi:pi})})});
+    f.words=f.S.map(function(s){return s.en}).join(" ").split(/\s+/).length;f.min=Math.max(1,Math.round(f.words/45))});
 
   var S;
-  function load(){S={ch:{},w:{},last:""};try{var r=JSON.parse(Store.get(KEY)||"null");if(r){S.ch=r.ch||{};S.w=r.w||{};S.last=r.last||""}}catch(e){}}
+  function load(){S={ch:{},w:{},last:"",fr:{}};try{var r=JSON.parse(Store.get(KEY)||"null");if(r){S.ch=r.ch||{};S.w=r.w||{};S.last=r.last||"";S.fr=r.fr||{}}}catch(e){}}
   function save(){Store.set(KEY,JSON.stringify(S))}
   load();
 
@@ -3324,7 +3546,17 @@ function look(raw,D){
   function bookDone(b){return b.ch.filter(chDone).length}
   function nextCh(b){for(var i=0;i<b.ch.length;i++)if(!chDone(b.ch[i]))return b.ch[i];return null}
   function findCh(id){var r=null;BOOKS.forEach(function(b){b.ch.forEach(function(c){if(c.id===id)r={b:b,c:c}})});return r}
-  function totalDone(){return Object.keys(S.ch).length}
+  function totalDone(){return Object.keys(S.ch).length+Object.keys(S.fr).length}
+  function frDone(f){return!!S.fr[f.id]}
+  function findFr(id){return FRAGS.filter(function(f){return f.id===id})[0]||null}
+  function nextFr(after){var st=after?after.n+1:0;for(var k=0;k<FRAGS.length;k++){var f=FRAGS[(st+k)%FRAGS.length];if(!frDone(f)&&f!==after)return f}return null}
+  // отрывок дня: прочитанный сегодня, иначе следующий непрочитанный; когда всё прочитано — по кругу
+  function todayFr(){
+    var t=FRAGS.filter(function(f){var r=S.fr[f.id];return r&&(r.d===G.TODAY||r.l===G.TODAY)});
+    if(t.length){var last=t[t.length-1];return{f:last,done:true,next:nextFr(last)||FRAGS[(last.n+1)%FRAGS.length]}}
+    var f=nextFr(null);if(f)return{f:f,done:false};
+    var dn=Math.floor(Date.now()/864e5);return{f:FRAGS[dn%FRAGS.length],done:false,again:true};
+  }
   function fullBooks(){return BOOKS.filter(function(b){return bookDone(b)===b.ch.length}).length}
   function plural(n,a,b,c){var m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c}
   // что читать дальше: последняя открытая книга, иначе первая недочитанная
@@ -3365,7 +3597,7 @@ function look(raw,D){
   function playBtn(){var b=$("bkPlay");if(b){b.textContent=playing?"⏸ Стоп":"▶ Слушать главу";b.setAttribute("aria-pressed",playing)}}
 
   // ---------- Отрисовка ----------
-  var host=$("books"),view="shelf",openBook=null,cur=null,tr=false,size=1;
+  var host=$("books"),view="shelf",openBook=null,cur=null,tr=false,size=1,allOpen=false;
   try{size=+(localStorage.getItem("eng-books-size")||1);if(!(size>=0&&size<=2))size=1}catch(e){}
   var SIZES=["17px","19px","22px"];
   var TOK=/[A-Za-z]+(?:[-'’][A-Za-z]+)*/g;
@@ -3377,6 +3609,7 @@ function look(raw,D){
     if(!host)return;
     closePop();
     if(view==="read"&&cur)return renderReader();
+    if(view==="frag"&&cur)return renderFrag();
     if(view==="book"&&openBook)return renderBook(openBook);
     renderShelf();
   }
@@ -3385,16 +3618,22 @@ function look(raw,D){
   function renderShelf(){
     view="shelf";document.body.classList.remove("reading");
     var sg=suggestion(),mw=myWords(),td=totalDone();
-    var h='<div class="bk-head"><h2>Книги</h2><p class="muted">Классика простым английским. Нажми на любое слово — увидишь перевод. Каждая глава — 3–6 минут.</p></div>';
+    var tf=todayFr(),frN=FRAGS.filter(frDone).length;
+    var h='<div class="bk-head"><h2>Книги</h2><p class="muted">Настоящие отрывки из английской классики. Читай сама, а если непонятно — нажми на слово: будет перевод слова и всей фразы.</p></div>';
+    h+=dayCard(tf,true);
+    h+='<details class="bk-all" id="bkAll"'+(allOpen?" open":"")+'><summary><b>Все отрывки</b><span>'+frN+' из '+FRAGS.length+' прочитано</span></summary><div class="bk-chs">'+FRAGS.map(function(f){var dn=frDone(f),cu=!tf.done&&tf.f===f;
+      return'<button type="button" class="bk-ch'+(dn?" done":"")+(cu?" next":"")+'" data-fr="'+f.id+'"><span class="bk-num" aria-hidden="true">'+(dn?"✓":f.n+1)+'</span><span class="bk-ch-t"><b>'+esc(f.bk)+'</b><span>'+esc(f.au)+', '+f.y+' · ≈'+f.min+' мин</span></span><span class="bk-stars" aria-label="'+LV[f.lv]+'">'+"★★★".slice(0,f.lv)+'</span></button>'}).join("")+'</div></details>';
+    h+='<div class="bk-head" style="margin-top:6px"><h2>Простые пересказы</h2><p class="muted">Те же истории, только проще и короче, с вопросами в конце главы. Хорошо для разминки.</p></div>';
     if(sg)h+='<button type="button" class="bk-next" data-ch="'+sg.c.id+'">'+cover(sg.b)+'<span class="bk-next-t"><span class="bk-eb">'+(S.ch[sg.c.id]||bookDone(sg.b)||S.last?"Продолжить":"Начни отсюда")+'</span><b>'+esc(sg.b.t)+'</b><span>Глава '+(sg.c.n+1)+' · '+esc(sg.c.t)+' · ≈'+sg.c.min+' мин</span></span><em aria-hidden="true">▶</em></button>';
-    else h+='<div class="bk-next calm"><span class="bk-next-t"><b>Ты прочитала все книги! 🏅</b><span>Перечитывай любимые главы — с каждым разом слов знакомо больше.</span></span></div>';
     h+='<div class="bk-list">'+BOOKS.map(function(b){var d=bookDone(b);
       return'<button type="button" class="bk-card" data-b="'+b.pos+'">'+cover(b)+'<span class="bk-info"><b class="bk-t">'+esc(b.t)+'</b><span class="bk-ru">'+esc(b.ru)+' · '+esc(b.au)+'</span><span class="bk-meta"><span class="g-lvl">'+b.lvl+'</span><span>'+(d===b.ch.length?"прочитана ✓":d+" из "+b.ch.length+" "+plural(b.ch.length,"главы","глав","глав"))+'</span></span>'+bar(d,b.ch.length)+'</span></button>'}).join("")+'</div>';
     h+='<div class="bk-words"><h2>Мои слова из книг'+(mw.length?" · "+mw.length:"")+'</h2>'+
       (mw.length?'<p class="muted">Они сами попадают в «Повтор слов» на вкладке «Играть». Нажми — услышишь.</p><div class="bk-wl">'+mw.slice(0,60).map(function(k){return'<span class="bk-wi"><button type="button" class="bk-ws" data-say="'+esc(k)+'"><b>'+esc(k)+'</b><span>'+esc(shortRu(S.w[k].r))+'</span></button><button type="button" class="bk-wx" data-del="'+esc(k)+'" aria-label="Убрать слово '+esc(k)+'">✕</button></span>'}).join("")+'</div>':
       '<p class="muted">Пока пусто. Когда читаешь, нажми на слово и потом «➕ В мои слова» — оно появится здесь и в тренажёре.</p>')+'</div>';
-    if(td)h+='<p class="muted" style="text-align:center;font-size:13px;margin:0">Прочитано глав: '+td+' из '+BOOKS.reduce(function(a,b){return a+b.ch.length},0)+'</p>';
+    if(td)h+='<p class="muted" style="text-align:center;font-size:13px;margin:0">Прочитано: отрывков '+frN+' из '+FRAGS.length+', глав пересказов '+Object.keys(S.ch).length+' из '+BOOKS.reduce(function(a,b){return a+b.ch.length},0)+'</p>';
     host.innerHTML=h;
+    host.querySelectorAll("[data-fr]").forEach(function(b){b.onclick=function(){openFr(this.dataset.fr)}});
+    $("bkAll").addEventListener("toggle",function(){allOpen=this.open});
     host.querySelectorAll("[data-b]").forEach(function(b){b.onclick=function(){openBook=BOOKS[+this.dataset.b];go("book")}});
     host.querySelectorAll("[data-ch]").forEach(function(b){b.onclick=function(){openCh(this.dataset.ch)}});
     host.querySelectorAll("[data-say]").forEach(function(b){b.onclick=function(){sayOne(this.dataset.say)}});
@@ -3450,8 +3689,77 @@ function look(raw,D){
     renderQ();
   }
 
+  // ---------- Отрывок дня ----------
+  function dayCard(tf){
+    var f=tf.f;
+    if(tf.done){var n=tf.next;
+      return'<div class="bk-day done"><span class="bk-eb">Отрывок дня · прочитан ✓</span><b class="bk-day-t">'+esc(f.bk)+'</b><span class="bk-day-a">'+esc(f.au)+', '+f.y+'</span>'+
+        (n?'<p class="bk-day-c">Хочешь ещё? Следующий — «'+esc(n.bk)+'», ≈'+n.min+' мин.</p><button type="button" class="g-big" data-fr="'+n.id+'">Читать ещё один ▶</button>':'')+'</div>'}
+    return'<div class="bk-day"><span class="bk-eb">Отрывок дня'+(tf.again?" · перечитай":"")+' · '+LV[f.lv]+'</span><b class="bk-day-t">'+esc(f.bk)+'</b><span class="bk-day-a">'+esc(f.au)+', '+f.y+' · ≈'+f.min+' мин</span><p class="bk-day-c">'+esc(f.ctx)+'</p><button type="button" class="g-big" data-fr="'+f.id+'">Читать отрывок ▶</button></div>';
+  }
+  function ctlHtml(){return'<div class="bk-ctl"><button type="button" class="g-say" id="bkPlay" aria-pressed="false">▶ Слушать</button><button type="button" class="g-say" id="bkSlow" aria-pressed="'+slow+'">🐢 '+(slow?"Медленно":"Обычно")+'</button><button type="button" class="g-say" id="bkTr" aria-pressed="'+tr+'">Перевод: '+(tr?"вкл":"выкл")+'</button></div>'}
+  function bindCommon(Sx){
+    $("bkSize").onclick=function(){size=(size+1)%3;try{localStorage.setItem("eng-books-size",size)}catch(e){}$("bkText").style.fontSize=SIZES[size]};
+    $("bkPlay").onclick=function(){if(playing)stopPlay();else playFrom(0)};
+    $("bkSlow").onclick=function(){slow=!slow;this.textContent="🐢 "+(slow?"Медленно":"Обычно");this.setAttribute("aria-pressed",slow);if(playing){var on=$("bkText").querySelector(".sn.on");playFrom(on?+on.dataset.i:0)}};
+    $("bkTr").onclick=function(){tr=!tr;this.textContent="Перевод: "+(tr?"вкл":"выкл");this.setAttribute("aria-pressed",tr);$("bkText").classList.toggle("tr",tr)};
+    host.querySelectorAll(".bk-kw").forEach(function(x){x.onclick=function(){sayOne(this.dataset.say)}});
+    $("bkText").onclick=function(e){
+      var w=e.target.closest(".w"),sn=e.target.closest(".sn");if(!sn||!w)return;
+      var i=+sn.dataset.i,again=w.classList.contains("on");showPop(w,Sx[i],i);if(again)sayOne(Sx[i].en);
+    };
+  }
+  function openFr(id){
+    var f=findFr(id);if(!f)return;
+    stopPlay();cur={fr:f,b:{D:f.D,t:f.bk},c:{S:f.S},fin:false,sm:false};
+    if(window.__tab&&host.hidden)window.__tab("books");
+    go("frag");
+  }
+  function renderFrag(){
+    view="frag";document.body.classList.add("reading");
+    var f=cur.fr,was=frDone(f);
+    var paras=[];f.S.forEach(function(s,i){(paras[s.pi]=paras[s.pi]||[]).push('<span class="sn" data-i="'+i+'">'+words(s.en)+'</span><span class="sr">'+esc(s.ru)+'</span>')});
+    var hw=Object.keys(f.G).filter(function(k){return!/^[А-ЯЁ]/.test(f.G[k])}).slice(0,16);
+    var kw=hw.map(function(k){return'<button type="button" class="chip bk-kw" data-say="'+esc(k)+'">'+esc(k)+' <span>'+esc(shortRu(f.G[k]))+'</span></button>'}).join("");
+    host.innerHTML='<div class="bk-top"><button type="button" class="x" id="bkBack" aria-label="На полку">←</button><span class="bk-top-t"><b>'+esc(f.bk)+'</b><span>Отрывок '+(f.n+1)+' из '+FRAGS.length+(was?" · прочитан":"")+'</span></span><button type="button" class="x" id="bkSize" aria-label="Размер текста">Aa</button></div>'+
+      '<div class="bk-sheet"><div class="bk-ch-head"><span class="g-lvl">'+LV[f.lv]+' · оригинальный текст</span><h3>'+esc(f.bk)+'</h3><p class="muted">'+esc(f.au)+', '+f.y+'</p></div>'+
+      '<div class="bk-ctx"><span class="bk-eb">О чём это</span>'+esc(f.ctx)+'</div>'+ctlHtml()+
+      (kw?'<details class="bk-kws"><summary>Трудные слова ('+hw.length+')</summary><div class="chips">'+kw+'</div></details>':'')+
+      '<div class="bk-text'+(tr?" tr":"")+'" id="bkText" style="font-size:'+SIZES[size]+'">'+paras.map(function(p){return"<p>"+p.join(" ")+"</p>"}).join("")+'</div>'+
+      '<p class="g-hint" style="margin:0">Нажми на слово — перевод слова и всей фразы. Нажми на него ещё раз — прозвучит фраза.</p></div>'+
+      '<div class="bk-sheet" id="bkQ"></div>';
+    $("bkBack").onclick=function(){stopPlay();cur=null;go("shelf")};
+    bindCommon(f.S);
+    renderFragEnd();
+  }
+  function renderFragEnd(){
+    var f=cur.fr,q=$("bkQ");if(!q)return;
+    var h='<div class="bk-ch-head"><span class="g-lvl">смысл</span><h3>Как ты поняла?</h3><p class="muted">Скажи себе своими словами, о чём отрывок. Потом сверься.</p></div>'+
+      (cur.sm?'<div class="bk-sm">'+esc(f.sm)+'</div>':'<button type="button" class="g-big ghost" id="bkSm">Показать смысл</button>');
+    if(cur.fin){var n=nextFr(f);
+      h+='<div class="g-res" id="bkEnd"><div style="font-size:52px;line-height:1">📖</div><div style="font-family:var(--display);font-size:22px;font-weight:800">'+(cur.first?"Отрывок прочитан!":"Перечитала — молодец!")+'</div><div style="font-family:var(--display);color:var(--lamp);font-size:20px">+'+cur.xp+' XP</div>'+
+        (n?'<button type="button" class="g-big" id="bkNf">Следующий: '+esc(n.bk)+' ▶</button>':'<p class="g-sci" style="font-size:15px">Ты прочитала все отрывки! 🏅 Любой можно перечитать на полке.</p>')+'<button type="button" class="g-big ghost" id="bkShelf">На полку</button></div>'}
+    else h+='<button type="button" class="g-big" id="bkFin">Прочитала ✓</button>';
+    q.innerHTML=h;
+    var b=$("bkSm");if(b)b.onclick=function(){cur.sm=true;renderFragEnd()};
+    b=$("bkFin");if(b)b.onclick=finishFr;
+    b=$("bkNf");if(b)b.onclick=function(){var n=nextFr(f);if(n)openFr(n.id)};
+    b=$("bkShelf");if(b)b.onclick=function(){cur=null;go("shelf")};
+  }
+  function finishFr(){
+    var f=cur.fr,first=!frDone(f);stopPlay();
+    var rec=S.fr[f.id]||{d:G.TODAY,n:0};rec.n=(rec.n||0)+1;rec.l=G.TODAY;S.fr[f.id]=rec;save();
+    var xp=first?25:5;G.addXP(xp);cur.xp=xp;cur.first=first;cur.fin=true;cur.sm=true;
+    G.event("book",{ch:totalDone(),full:fullBooks()});
+    G.sfx(first?"lvl":"ok");
+    renderFragEnd();cta();
+    var e=$("bkEnd");if(e)try{e.scrollIntoView({block:"center",behavior:"smooth"})}catch(x){}
+  }
+
   // ---------- Перевод слова ----------
-  var popEl=null;
+  var popEl=null,popY=0;
+  // листаешь дальше — перевод сам убирается, чтобы не закрывал текст
+  window.addEventListener("scroll",function(){if(popEl&&Math.abs(window.scrollY-popY)>240)closePop()},{passive:true});
   function closePop(){if(popEl){popEl.remove();popEl=null}var t=$("bkText");if(t)t.querySelectorAll(".w.on,.sn.sel").forEach(function(x){x.classList.remove("on");x.classList.remove("sel")})}
   function showPop(w,s,i){
     closePop();
@@ -3463,7 +3771,7 @@ function look(raw,D){
       '<div class="bk-pop-s"><span class="g-hint">Вся фраза:</span> '+esc(s.ru)+'</div>'+
       '<div class="bk-pop-b"><button type="button" class="g-say" id="bpW">🔊 Слово</button><button type="button" class="g-say" id="bpS">🔊 Фраза</button>'+(r?'<button type="button" class="g-say'+(has?" on":"")+'" id="bpA">'+(has?"✓ В моих словах":"➕ В мои слова")+'</button>':'')+'</div>';
     document.body.appendChild(d);popEl=d;
-    try{var wr=w.getBoundingClientRect(),pr=d.getBoundingClientRect();if(wr.bottom>pr.top-12)window.scrollBy({top:wr.bottom-pr.top+48,behavior:"smooth"})}catch(e){}
+    popY=window.scrollY;try{var wr=w.getBoundingClientRect(),pr=d.getBoundingClientRect();if(wr.bottom>pr.top-12){var dy=wr.bottom-pr.top+48;popY+=dy;window.scrollBy({top:dy,behavior:"smooth"})}}catch(e){}
     sayOne(raw.replace(/’/g,"'"));
     $("bpX").onclick=closePop;
     $("bpW").onclick=function(){sayOne(raw.replace(/’/g,"'"))};
@@ -3519,21 +3827,21 @@ function look(raw,D){
 
   // ---------- Карточка на «Пути» ----------
   function cta(){
-    var el=$("bookCta");if(!el)return;var sg=suggestion();
-    if(!sg){el.innerHTML="";el.hidden=true;return}
-    var read=Object.keys(S.ch).some(function(k){return S.ch[k].d===G.TODAY||S.ch[k].l===G.TODAY});
-    el.innerHTML='<button type="button" class="revbtn bk-cta'+(read?" read":"")+'" id="bkCtaBtn"><span class="ri" aria-hidden="true">'+(read?"✅":"📖")+'</span><span><b>'+(read?"Сегодня ты уже читала":"Почитать книгу")+'</b><span>'+esc(sg.b.t)+' · глава '+(sg.c.n+1)+' «'+esc(sg.c.t)+'» · ≈'+sg.c.min+' мин</span></span><em aria-hidden="true">▶</em></button>';
-    $("bkCtaBtn").onclick=function(){if(window.__tab)window.__tab("books");openCh(sg.c.id)};
+    var el=$("bookCta");if(!el)return;var tf=todayFr(),f=tf.f,n=tf.next;
+    el.innerHTML=tf.done?
+      '<button type="button" class="revbtn bk-cta read" id="bkCtaBtn" data-fr="'+(n||f).id+'"><span class="ri" aria-hidden="true">✅</span><span><b>Отрывок дня прочитан</b><span>Хочешь ещё? «'+esc((n||f).bk)+'» · ≈'+(n||f).min+' мин</span></span><em aria-hidden="true">▶</em></button>':
+      '<button type="button" class="revbtn bk-cta" id="bkCtaBtn" data-fr="'+f.id+'"><span class="ri" aria-hidden="true">📖</span><span><b>Отрывок дня</b><span>«'+esc(f.bk)+'» · '+esc(f.au)+' · ≈'+f.min+' мин</span></span><em aria-hidden="true">▶</em></button>';
+    $("bkCtaBtn").onclick=function(){openFr(this.dataset.fr)};
   }
 
   // Слова для тренажёра: всё, что сохранила при чтении
   function trainWords(){return myWords().map(function(k){return{en:k,ru:shortRu(S.w[k].r),id:"w:"+k}})}
 
-  Store.onRemote(function(){load();if(view!=="read")render();cta()});
+  Store.onRemote(function(){load();if(view!=="read"&&view!=="frag")render();cta()});
   render();cta();
-  // вкладки: ушла с «Книг» — тишина и закрытый перевод, вернулась в главу — снова режим чтения
-  function tab(t){if(t==="books"){if(view==="read"&&cur)document.body.classList.add("reading")}else{closePop();stopPlay();document.body.classList.remove("reading")}}
-  return{render:render,trainWords:trainWords,open:openCh,stop:stopPlay,tab:tab};
+  // вкладки: ушла с «Книг» — тишина и закрытый перевод, вернулась к тексту — снова режим чтения
+  function tab(t){if(t==="books"){if((view==="read"||view==="frag")&&cur)document.body.classList.add("reading")}else{closePop();stopPlay();document.body.classList.remove("reading")}}
+  return{render:render,trainWords:trainWords,open:openCh,openFr:openFr,stop:stopPlay,tab:tab};
 })();
 
 </script>
